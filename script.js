@@ -849,6 +849,7 @@ function renderMainChart() {
 
     // Add index performance line without currency changes
     if (indexWithoutCurrencyChangesData.length > 0) {
+        console.log('Adding purple line with data:', indexWithoutCurrencyChangesData.length, 'points');
         datasets.push({
             label: `${indexInfo.name} (No Currency Changes)`,
             data: indexWithoutCurrencyChangesData.map(item => item.value),
@@ -864,6 +865,8 @@ function renderMainChart() {
             pointHoverBorderWidth: 2,
             yAxisID: 'y'
         });
+    } else {
+        console.log('No purple line data available. Currency rates:', Object.keys(currencyRates));
     }
     
     const chartData = {
@@ -974,13 +977,10 @@ function calculateCurrencyImpactOverTime(data, targetCurrency, sourceCurrency) {
         }));
     }
     
-    const startDate = data[0].date;
-    const startRate = currencyRates[targetCurrency] / currencyRates[sourceCurrency];
+    // Use current exchange rate for currency impact calculation
+    const currentRate = currencyRates[targetCurrency] / currencyRates[sourceCurrency];
     
     return data.map((item, index) => {
-        // Calculate daily currency impact based on the formula
-        // R_currency = (1 + R_total) - (1 + R_local)
-        
         if (index === 0) {
             return {
                 date: item.date,
@@ -994,28 +994,20 @@ function calculateCurrencyImpactOverTime(data, targetCurrency, sourceCurrency) {
         // Calculate local return (S&P 500 in USD)
         const localReturn = (item.close - prevItem.close) / prevItem.close;
         
-        // Calculate FX return (change in USD/NOK)
-        const daysSinceStart = Math.floor((item.date - startDate) / (1000 * 60 * 60 * 24));
-        const dailyChange = 0.0001; // 0.01% daily change
-        const randomFactor = Math.sin(daysSinceStart * 0.05) * 0.3;
-        const currentRate = startRate * (1 + (daysSinceStart * dailyChange) + randomFactor);
-        const prevRate = startRate * (1 + ((daysSinceStart - 1) * dailyChange) + Math.sin((daysSinceStart - 1) * 0.05) * 0.3);
+        // For currency impact, we calculate the difference between:
+        // 1. S&P 500 performance with current exchange rate
+        // 2. S&P 500 performance with starting exchange rate
         
-        const fxReturn = (currentRate - prevRate) / prevRate;
+        // Current value in target currency
+        const currentValueInTarget = item.close * currentRate;
+        const prevValueInTarget = prevItem.close * currentRate;
         
-        // Calculate total return in local currency
-        const totalReturn = (1 + localReturn) * (1 + fxReturn) - 1;
-        
-        // Extract currency contribution: R_currency = (1 + R_total) - (1 + R_local)
-        const currencyImpact = (1 + totalReturn) - (1 + localReturn);
-        
-        // Convert to NOK value (multiply by previous day's price in NOK)
-        const prevPriceNOK = prevItem.close * prevRate;
-        const currencyImpactNOK = currencyImpact * prevPriceNOK;
+        // Calculate daily currency impact as the difference
+        const currencyImpact = (currentValueInTarget - prevValueInTarget) - (item.close - prevItem.close);
         
         return {
             date: item.date,
-            impact: currencyImpactNOK
+            impact: currencyImpact
         };
     });
 }
@@ -1049,10 +1041,21 @@ function calculateIndexWithoutCurrencyChanges(data, targetCurrency, sourceCurren
     // Get the starting exchange rate for the period
     const startRate = currencyRates[targetCurrency] / currencyRates[sourceCurrency];
     
+    // Calculate the purple line: S&P 500 performance using the starting exchange rate
+    // This shows what the performance would look like if the exchange rate never changed
     const result = data.map(item => ({
         date: item.date,
-        value: item.close * startRate // Use starting rate for all data points
+        value: item.close * startRate // Use the SAME starting rate for ALL data points
     }));
+    
+    console.log('Purple line calculation:', {
+        targetCurrency,
+        sourceCurrency,
+        startRate,
+        firstValue: result[0]?.value,
+        lastValue: result[result.length - 1]?.value,
+        dataPoints: result.length
+    });
     
     return result;
 }
