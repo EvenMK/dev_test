@@ -1218,7 +1218,22 @@ function renderMainChart() {
                     },
                     callbacks: {
                         title: function(context) {
-                            return new Date(context[0].parsed.x).toLocaleDateString();
+                            const date = new Date(context[0].parsed.x);
+                            const dateStr = date.toLocaleDateString();
+                            
+                            // Find the exchange rate for this date
+                            let exchangeRate = '';
+                            if (historicalRates && historicalRates.length > 0) {
+                                const targetDate = date.toDateString();
+                                const rateData = historicalRates.find(rate => 
+                                    rate.date.toDateString() === targetDate
+                                );
+                                if (rateData) {
+                                    exchangeRate = ` (USD/NOK: ${rateData.rate.toFixed(4)})`;
+                                }
+                            }
+                            
+                            return dateStr + exchangeRate;
                         },
                         label: function(context) {
                             // Simple tooltip - just show the value without complex calculations
@@ -1655,50 +1670,58 @@ function updateStatistics() {
     const totalReturnPercentUSD = (totalReturnUSD / data[0].close) * 100;
     const totalReturnPercentNOK = (totalReturnNOK / (currentPriceNOK - totalReturnNOK)) * 100;
     
-    // Calculate currency impact properly using historical rates
-    // Currency impact = Current performance - Performance without currency changes
-    const currentRate = currencyRates[selectedCurrency] / currencyRates[indexInfo.currency];
-    const timeframe = elements.timeframeSelect.value;
+    // Calculate currency impact using real historical rates
+    let currencyImpactNOK = 0;
+    let currencyImpactPercentNOK = 0;
+    let currencyImpactUSD = 0;
+    let currencyImpactPercentUSD = 0;
     
-    // Use historical rates if available for more accurate calculation
-    let historicalStartRate = currentRate;
-    if (historicalRates.length > 0 && selectedCurrency === 'NOK') {
+    if (historicalRates && historicalRates.length > 0 && selectedCurrency === 'NOK') {
+        // Get the actual start and end rates from historical data
         const startDate = data[0].date;
-        const startRateData = findClosestRate(startDate);
-        historicalStartRate = startRateData;
-        console.log('Using historical start rate:', historicalStartRate, 'for date:', startDate);
+        const endDate = data[data.length - 1].date;
+        
+        const startRateData = historicalRates.find(rate => 
+            rate.date.toDateString() === startDate.toDateString()
+        );
+        const endRateData = historicalRates.find(rate => 
+            rate.date.toDateString() === endDate.toDateString()
+        );
+        
+        if (startRateData && endRateData) {
+            const startRate = startRateData.rate;
+            const endRate = endRateData.rate;
+            
+            // Calculate what the investment would be worth if exchange rate stayed constant
+            const startValueUSD = data[0].close;
+            const endValueUSD = data[data.length - 1].close;
+            const startValueNOK = startValueUSD * startRate;
+            const endValueNOKWithStartRate = endValueUSD * startRate; // If rate didn't change
+            const actualEndValueNOK = endValueUSD * endRate; // Actual value with rate change
+            
+            // Currency impact is the difference
+            currencyImpactNOK = actualEndValueNOK - endValueNOKWithStartRate;
+            currencyImpactPercentNOK = (currencyImpactNOK / startValueNOK) * 100;
+            
+            // USD impact is 0 since we're measuring NOK impact
+            currencyImpactUSD = 0;
+            currencyImpactPercentUSD = 0;
+            
+            console.log('Real currency impact calculation:', {
+                startRate: startRate.toFixed(4),
+                endRate: endRate.toFixed(4),
+                rateChange: ((endRate - startRate) / startRate * 100).toFixed(2) + '%',
+                currencyImpactNOK: currencyImpactNOK.toFixed(2),
+                currencyImpactPercentNOK: currencyImpactPercentNOK.toFixed(2) + '%'
+            });
+        }
+    } else if (selectedCurrency === 'USD') {
+        // No currency impact when viewing in USD
+        currencyImpactNOK = 0;
+        currencyImpactPercentNOK = 0;
+        currencyImpactUSD = 0;
+        currencyImpactPercentUSD = 0;
     }
-    
-    // Calculate the starting rate for the period (same logic as purple line)
-    let rateAdjustment = 1.0;
-    switch(timeframe) {
-        case '1d': rateAdjustment = 0.999; break;
-        case '5d': rateAdjustment = 0.995; break;
-        case '1mo': rateAdjustment = 0.98; break;
-        case '3mo': rateAdjustment = 0.95; break;
-        case '6mo': rateAdjustment = 0.90; break;
-        case '1y': rateAdjustment = 0.85; break;
-        case '2y': rateAdjustment = 0.80; break;
-        case '5y': rateAdjustment = 0.70; break;
-        case 'max': rateAdjustment = 0.60; break;
-        default: rateAdjustment = 0.90;
-    }
-    
-    const startRate = historicalStartRate * rateAdjustment;
-    
-    // Calculate values with and without currency changes
-    const currentValueUSD = data[data.length - 1].close;
-    const currentValueNOK = currentValueUSD * currentRate;
-    const startValueUSD = data[0].close;
-    const startValueNOK = startValueUSD * startRate;
-    
-    // Calculate currency impact in NOK
-    const currencyImpactNOK = currentValueNOK - (currentValueUSD * startRate);
-    const currencyImpactPercentNOK = (currencyImpactNOK / (startValueUSD * startRate)) * 100;
-    
-    // Calculate currency impact in USD (should be 0 when USD is selected)
-    const currencyImpactUSD = selectedCurrency === 'USD' ? 0 : (currentValueUSD - (currentValueUSD * (startRate / currentRate)));
-    const currencyImpactPercentUSD = selectedCurrency === 'USD' ? 0 : (currencyImpactUSD / startValueUSD) * 100;
     
     // Update DOM with dual currency display and percentages
     if (selectedCurrency === 'NOK') {
