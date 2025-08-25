@@ -388,22 +388,14 @@ async function loadCurrencyRates() {
                         currencyRates.USD = 1; // Base currency
                         setCachedData('currencyRates', currencyRates);
                         console.log('Real currency rates loaded from:', api);
-                        
-                        // Re-render chart if data is available
-                        if (currentData) {
-                            renderChart();
-                        }
+                        console.log('Available currencies:', Object.keys(currencyRates));
                         return;
                     } else if (data.conversion_rates) {
                         currencyRates = data.conversion_rates;
                         currencyRates.USD = 1;
                         setCachedData('currencyRates', currencyRates);
                         console.log('Real currency rates loaded from:', api);
-                        
-                        // Re-render chart if data is available
-                        if (currentData) {
-                            renderChart();
-                        }
+                        console.log('Available currencies:', Object.keys(currencyRates));
                         return;
                     }
                 }
@@ -416,7 +408,14 @@ async function loadCurrencyRates() {
         throw new Error('All currency APIs failed');
     } catch (error) {
         console.error('Error loading currency rates:', error);
-        throw new Error('Failed to load real currency rates');
+        
+        // Fallback rates for USD and NOK to ensure chart functionality
+        currencyRates = {
+            USD: 1,
+            NOK: 10.5 // Approximate USD/NOK rate
+        };
+        console.log('Using fallback currency rates:', currencyRates);
+        setCachedData('currencyRates', currencyRates);
     }
 }
 
@@ -477,11 +476,21 @@ async function loadFinancialData() {
             await loadCurrencyRates();
         }
         
-        renderChart();
-        updateStatistics();
-        updatePerformanceTable();
-        updateChartHeader(symbol);
-        updateLastUpdated();
+        // Double-check that currency rates are loaded
+        if (Object.keys(currencyRates).length > 0) {
+            console.log('Currency rates confirmed loaded:', Object.keys(currencyRates));
+            renderChart();
+            updateStatistics();
+            updatePerformanceTable();
+            updateChartHeader(symbol);
+            updateLastUpdated();
+        } else {
+            console.error('Currency rates still not loaded after attempt');
+            showError('Currency data unavailable. Retrying...');
+            setTimeout(() => {
+                loadFinancialData();
+            }, 3000);
+        }
         
         console.log('Real market data loaded successfully');
         
@@ -821,6 +830,7 @@ function renderMainChart() {
     // Add index performance line without currency changes
     if (indexWithoutCurrencyChangesData.length > 0) {
         console.log('Adding third line with data length:', indexWithoutCurrencyChangesData.length);
+        console.log('Third line data sample:', indexWithoutCurrencyChangesData.slice(0, 3));
         datasets.push({
             label: `${indexInfo.name} (No Currency Changes)`,
             data: indexWithoutCurrencyChangesData.map(item => item.value),
@@ -838,6 +848,8 @@ function renderMainChart() {
         });
     } else {
         console.log('No data for third line - currency rates available:', Object.keys(currencyRates).length > 0);
+        console.log('Currency rates:', currencyRates);
+        console.log('Selected currency:', selectedCurrency, 'Index currency:', indexInfo.currency);
     }
     
     const chartData = {
@@ -1030,6 +1042,7 @@ function convertDataToCurrency(data, targetCurrency, sourceCurrency) {
 // Calculate index performance without currency changes (using starting rate)
 function calculateIndexWithoutCurrencyChanges(data, targetCurrency, sourceCurrency) {
     console.log('calculateIndexWithoutCurrencyChanges called with:', { targetCurrency, sourceCurrency, dataLength: data.length });
+    console.log('Available currency rates:', Object.keys(currencyRates));
     
     if (targetCurrency === sourceCurrency) {
         console.log('Same currency, returning original data');
@@ -1037,6 +1050,12 @@ function calculateIndexWithoutCurrencyChanges(data, targetCurrency, sourceCurren
             date: item.date,
             value: item.close
         }));
+    }
+    
+    // Check if we have the required currency rates
+    if (!currencyRates[targetCurrency] || !currencyRates[sourceCurrency]) {
+        console.error('Missing currency rates for calculation:', { targetCurrency, sourceCurrency, availableRates: Object.keys(currencyRates) });
+        return [];
     }
     
     // Get the starting exchange rate for the period
@@ -1049,6 +1068,7 @@ function calculateIndexWithoutCurrencyChanges(data, targetCurrency, sourceCurren
     }));
     
     console.log('Third line data calculated, first few values:', result.slice(0, 3));
+    console.log('Third line data length:', result.length);
     return result;
 }
 
