@@ -129,7 +129,8 @@ function initializeElements() {
         volatility: document.getElementById('volatility'),
         volatilityChange: document.getElementById('volatility-change'),
         performanceTbody: document.getElementById('performance-tbody'),
-        marketOverview: document.getElementById('market-overview')
+        marketOverview: document.getElementById('market-overview'),
+        chartTitle: document.getElementById('chart-title')
     };
 }
 
@@ -243,6 +244,34 @@ function toggleTheme() {
     
     // Save preference
     localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+}
+
+// Update chart title dynamically
+function updateChartTitle() {
+    const indexSymbol = elements.indexSelect.value;
+    const indexInfo = indexConfig[indexSymbol];
+    const selectedCurrency = elements.currencySelect.value;
+    const timeframe = elements.timeframeSelect.value;
+    
+    // Format timeframe for display
+    const timeframeMap = {
+        '1d': '1 Day',
+        '5d': '5 Days', 
+        '1mo': '1 Month',
+        '3mo': '3 Months',
+        '6mo': '6 Months',
+        '1y': '1 Year',
+        '2y': '2 Years',
+        '5y': '5 Years',
+        'max': 'Max'
+    };
+    
+    const timeframeDisplay = timeframeMap[timeframe] || timeframe;
+    const title = `${indexInfo.name} Performance (${timeframeDisplay}) - ${selectedCurrency}`;
+    
+    if (elements.chartTitle) {
+        elements.chartTitle.textContent = title;
+    }
 }
 
 function updateChartTheme() {
@@ -789,9 +818,9 @@ function renderMainChart() {
             backgroundColor: 'rgba(0, 212, 170, 0.1)',
             borderWidth: 2,
             fill: true,
-            tension: 0.4,
+            tension: 0.1,
             pointRadius: 0,
-            pointHoverRadius: 6,
+            pointHoverRadius: 4,
             pointHoverBackgroundColor: '#00d4aa',
             pointHoverBorderColor: '#ffffff',
             pointHoverBorderWidth: 2,
@@ -808,9 +837,9 @@ function renderMainChart() {
             backgroundColor: 'rgba(255, 107, 107, 0.1)',
             borderWidth: 2,
             fill: false,
-            tension: 0.4,
+            tension: 0.1,
             pointRadius: 0,
-            pointHoverRadius: 4,
+            pointHoverRadius: 3,
             pointHoverBackgroundColor: '#ff6b6b',
             pointHoverBorderColor: '#ffffff',
             pointHoverBorderWidth: 2,
@@ -827,9 +856,9 @@ function renderMainChart() {
             backgroundColor: 'rgba(79, 70, 229, 0.1)',
             borderWidth: 2,
             fill: false,
-            tension: 0.4,
+            tension: 0.1,
             pointRadius: 0,
-            pointHoverRadius: 4,
+            pointHoverRadius: 3,
             pointHoverBackgroundColor: '#4f46e5',
             pointHoverBorderColor: '#ffffff',
             pointHoverBorderWidth: 2,
@@ -852,6 +881,13 @@ function renderMainChart() {
                 intersect: false,
                 mode: 'index'
             },
+            animation: {
+                duration: 0
+            },
+            hover: {
+                animationDuration: 0
+            },
+            responsiveAnimationDuration: 0,
             plugins: {
                 legend: {
                     display: true,
@@ -877,23 +913,8 @@ function renderMainChart() {
                             return new Date(context[0].parsed.x).toLocaleDateString();
                         },
                         label: function(context) {
-                            // Pre-calculate exchange rates to avoid lag
-                            const currentRate = Object.keys(currencyRates).length > 0 ? 
-                                currencyRates[selectedCurrency] / currencyRates[indexInfo.currency] : 1;
-                            const startRate = Object.keys(currencyRates).length > 0 ? 
-                                currencyRates[selectedCurrency] / currencyRates[indexInfo.currency] : 1;
-                            
-                            if (context.datasetIndex === 0) {
-                                const rateInfo = selectedCurrency !== indexInfo.currency ? 
-                                    ` (Rate: ${currentRate.toFixed(4)} ${selectedCurrency}/${indexInfo.currency})` : '';
-                                return `${context.dataset.label}: ${formatCurrency(context.parsed.y, selectedCurrency)}${rateInfo}`;
-                            } else if (context.datasetIndex === 1) {
-                                return `${context.dataset.label}: ${formatCurrency(context.parsed.y, selectedCurrency)}`;
-                            } else {
-                                const rateInfo = selectedCurrency !== indexInfo.currency ? 
-                                    ` (Starting Rate: ${startRate.toFixed(4)} ${selectedCurrency}/${indexInfo.currency})` : '';
-                                return `${context.dataset.label}: ${formatCurrency(context.parsed.y, selectedCurrency)}${rateInfo}`;
-                            }
+                            // Simple tooltip without complex calculations
+                            return `${context.dataset.label}: ${formatCurrency(context.parsed.y, selectedCurrency)}`;
                         }
                     }
                 }
@@ -934,6 +955,9 @@ function renderMainChart() {
     };
     
     mainChart = new Chart(ctx, config);
+    
+    // Update chart title dynamically
+    updateChartTitle();
     
     // Update chart theme
     updateChartTheme();
