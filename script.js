@@ -1054,12 +1054,12 @@ function renderMainChart() {
             backgroundColor: 'rgba(0, 212, 170, 0.1)',
             borderWidth: 2,
             fill: true,
-            tension: 0.1,
+            tension: 0.05,
             pointRadius: 0,
-            pointHoverRadius: 4,
+            pointHoverRadius: 2,
             pointHoverBackgroundColor: '#00d4aa',
             pointHoverBorderColor: '#ffffff',
-            pointHoverBorderWidth: 2,
+            pointHoverBorderWidth: 1,
             yAxisID: 'y'
         }
     ];
@@ -1073,12 +1073,12 @@ function renderMainChart() {
             backgroundColor: 'rgba(255, 107, 107, 0.1)',
             borderWidth: 2,
             fill: false,
-            tension: 0.1,
+            tension: 0.05,
             pointRadius: 0,
-            pointHoverRadius: 3,
+            pointHoverRadius: 2,
             pointHoverBackgroundColor: '#ff6b6b',
             pointHoverBorderColor: '#ffffff',
-            pointHoverBorderWidth: 2,
+            pointHoverBorderWidth: 1,
             yAxisID: 'y'
         });
     }
@@ -1093,14 +1093,14 @@ function renderMainChart() {
             data: indexWithoutCurrencyChangesData.map(item => item.value),
             borderColor: '#8b5cf6', // Brighter purple color for better visibility
             backgroundColor: 'rgba(139, 92, 246, 0.1)',
-            borderWidth: 4, // Make it even thicker to ensure visibility
+            borderWidth: 3, // Slightly thinner for better performance
             fill: false,
-            tension: 0.1,
+            tension: 0.05,
             pointRadius: 0,
-            pointHoverRadius: 4,
+            pointHoverRadius: 2,
             pointHoverBackgroundColor: '#8b5cf6',
             pointHoverBorderColor: '#ffffff',
-            pointHoverBorderWidth: 2,
+            pointHoverBorderWidth: 1,
             yAxisID: 'y'
         };
         
@@ -1156,29 +1156,15 @@ function renderMainChart() {
                     borderWidth: 1,
                     cornerRadius: 8,
                     displayColors: false,
+                    animation: {
+                        duration: 0
+                    },
                     callbacks: {
                         title: function(context) {
                             return new Date(context[0].parsed.x).toLocaleDateString();
                         },
                         label: function(context) {
-                            const dataIndex = context[0].dataIndex;
-                            
-                            if (context.datasetIndex === 0) {
-                                // Green line - S&P 500 with current rates
-                                return `${context.dataset.label}: ${formatCurrency(context.parsed.y, selectedCurrency)}`;
-                            } else if (context.datasetIndex === 1) {
-                                // Red line - Currency impact
-                                return `${context.dataset.label}: ${formatCurrency(context.parsed.y, selectedCurrency)}`;
-                            } else if (context.datasetIndex === 2 && selectedCurrency !== 'USD') {
-                                // Purple line - No currency changes (only when not USD)
-                                // Calculate the currency impact as the difference between green and purple lines
-                                const greenValue = context[0].chart.data.datasets[0].data[dataIndex];
-                                const purpleValue = context.parsed.y;
-                                const currencyImpact = greenValue - purpleValue;
-                                
-                                return `${context.dataset.label}: ${formatCurrency(context.parsed.y, selectedCurrency)} (Currency Impact: ${formatCurrency(currencyImpact, selectedCurrency)})`;
-                            }
-                            
+                            // Simple tooltip - just show the value without complex calculations
                             return `${context.dataset.label}: ${formatCurrency(context.parsed.y, selectedCurrency)}`;
                         }
                     }
