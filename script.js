@@ -387,11 +387,14 @@ async function loadHistoricalExchangeRates(startDate, endDate) {
         const endDateStr = endDate.toISOString().split('T')[0];
         const apiUrl = `https://api.frankfurter.app/${startDateStr}..${endDateStr}?from=USD&to=NOK`;
         
+        console.log('Fetching from API:', apiUrl);
+        
         // Try with CORS proxy first
         const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`;
         let response = await fetch(proxyUrl);
         
         if (!response.ok) {
+            console.log('Proxy failed, trying direct API...');
             response = await fetch(apiUrl);
         }
         
@@ -412,6 +415,7 @@ async function loadHistoricalExchangeRates(startDate, endDate) {
                 // Sort by date
                 dailyRates.sort((a, b) => a.date - b.date);
                 console.log('Processed daily rates:', dailyRates.length, 'days');
+                console.log('Sample rates:', dailyRates.slice(0, 3));
                 return dailyRates;
             }
         }
@@ -420,17 +424,17 @@ async function loadHistoricalExchangeRates(startDate, endDate) {
     } catch (error) {
         console.error('Error loading historical exchange rates:', error);
         
-        // Fallback: generate synthetic historical rates
+        // Fallback: generate synthetic historical rates with realistic values
         const dailyRates = [];
         const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-        const baseRate = 10.5; // Base USD/NOK rate
+        const baseRate = 11.2; // More realistic base USD/NOK rate
         
         for (let i = 0; i <= daysDiff; i++) {
             const date = new Date(startDate);
             date.setDate(date.getDate() + i);
             
-            // Add some realistic variation to the rate
-            const variation = Math.sin(i * 0.01) * 0.5 + Math.random() * 0.2;
+            // Add some realistic variation to the rate (USD/NOK typically between 10-12)
+            const variation = Math.sin(i * 0.01) * 0.8 + Math.random() * 0.4;
             const rate = baseRate + variation;
             
             dailyRates.push({
@@ -440,6 +444,7 @@ async function loadHistoricalExchangeRates(startDate, endDate) {
         }
         
         console.log('Using synthetic historical rates:', dailyRates.length, 'days');
+        console.log('Sample synthetic rates:', dailyRates.slice(0, 3));
         return dailyRates;
     }
 }
@@ -872,7 +877,13 @@ function renderMainChart() {
     const indexInfo = indexConfig[indexSymbol];
     
     // Convert data to selected currency
+    console.log('Before conversion - Sample data:', currentData.data.slice(0, 3).map(item => ({ date: item.date, close: item.close })));
+    console.log('Selected currency:', selectedCurrency, 'Index currency:', indexInfo.currency);
+    console.log('Historical rates available:', historicalRates.length);
+    
     const convertedData = convertDataToCurrency(currentData.data, selectedCurrency, indexInfo.currency);
+    
+    console.log('After conversion - Sample data:', convertedData.slice(0, 3).map(item => ({ date: item.date, close: item.close })));
     
     // Calculate currency impact over time (only if we have currency rates)
     let currencyImpactData = [];
@@ -1141,10 +1152,15 @@ function convertDataToCurrency(data, targetCurrency, sourceCurrency) {
     
     // If we have historical rates, use them for more accurate conversion
     if (historicalRates.length > 0 && targetCurrency === 'NOK' && sourceCurrency === 'USD') {
+        console.log('Converting USD to NOK using historical rates. Historical rates count:', historicalRates.length);
+        console.log('Sample historical rates:', historicalRates.slice(0, 3));
+        
         return data.map(item => {
             // Find the closest historical rate for this date
             const itemDate = new Date(item.date);
             const closestRate = findClosestRate(itemDate);
+            
+            console.log(`Converting ${item.date}: USD ${item.close} * ${closestRate} = NOK ${item.close * closestRate}`);
             
             return {
                 ...item,
@@ -1159,6 +1175,7 @@ function convertDataToCurrency(data, targetCurrency, sourceCurrency) {
     
     // Fallback to current rate
     const conversionRate = currencyRates[targetCurrency] / currencyRates[sourceCurrency];
+    console.log('Using fallback conversion rate:', conversionRate, 'for', sourceCurrency, 'to', targetCurrency);
     
     return data.map(item => ({
         ...item,
