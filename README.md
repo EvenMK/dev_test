@@ -184,29 +184,16 @@ Modify CSS variables in `styles.css`:
   - **Attribution**: Required ✅
 
 ### **Currency Exchange APIs**
-- **Frankfurter API** (frankfurter.app) - **Primary**
-  - **URL**: https://api.frankfurter.app/
-  - **License**: Free, open source
+- **Norges Bank API** (data.norges-bank.no) - **Primary**
+  - **URL**: https://data.norges-bank.no/
+  - **License**: Free, official Norwegian Central Bank
   - **Rate Limit**: No strict limits
   - **Attribution**: Required ✅
 
-- **Exchange Rate API** (exchangerate-api.com) - **Backup**
-  - **URL**: https://api.exchangerate-api.com/
-  - **License**: Free tier available
-  - **Rate Limit**: 1000 requests/month (free)
-  - **Attribution**: Required ✅
-
-- **Open Exchange Rates** (openexchangerates.org) - **Backup**
-  - **URL**: https://open.er-api.com/
-  - **License**: Free tier available
-  - **Rate Limit**: 1000 requests/month (free)
-  - **Attribution**: Required ✅
-
-### **Alternative Data Source**
-- **Alpha Vantage** (alphavantage.co)
-  - **URL**: https://www.alphavantage.co/
-  - **License**: Free tier available
-  - **Rate Limit**: 5 requests/minute (free)
+- **Frankfurter API** (frankfurter.app) - **Backup**
+  - **URL**: https://api.frankfurter.app/
+  - **License**: Free, open source
+  - **Rate Limit**: No strict limits
   - **Attribution**: Required ✅
 
 ### **CORS Proxy Service**
@@ -248,8 +235,8 @@ Modify CSS variables in `styles.css`:
 This dashboard complies with all API terms of service:
 
 - **Yahoo Finance**: Used within rate limits, proper attribution provided
-- **Exchange Rate APIs**: Used within free tier limits, attribution included
-- **Alpha Vantage**: Used as backup within rate limits
+- **Norges Bank API**: Used within terms of service, proper attribution provided
+- **Frankfurter API**: Used within free tier limits, attribution included
 - **Chart.js**: MIT License compliance maintained
 - **Font Awesome**: Free license terms followed
 - **Google Fonts**: Open Font License compliance

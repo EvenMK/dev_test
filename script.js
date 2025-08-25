@@ -5,10 +5,11 @@
  * 
  * Data Sources:
  * - Yahoo Finance API (Yahoo Inc.) - https://finance.yahoo.com/
- * - Exchange Rate API (exchangerate-api.com) - https://exchangerate-api.com/
- * - Open Exchange Rates (openexchangerates.org) - https://openexchangerates.org/
- * - Frankfurter (frankfurter.app) - https://frankfurter.app/
- * - Alpha Vantage (alphavantage.co) - https://www.alphavantage.co/
+ * - Norges Bank API (Norges Bank) - https://data.norges-bank.no/
+ * - Frankfurter API (frankfurter.app) - https://frankfurter.app/
+ * 
+ * Services:
+ * - CORS Proxy (api.allorigins.win) - https://api.allorigins.win/
  * 
  * Libraries:
  * - Chart.js (Chart.js Contributors) - https://www.chartjs.org/
