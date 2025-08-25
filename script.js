@@ -958,6 +958,7 @@ function renderMainChart() {
     console.log('Chart labels:', mainChart.data.labels.length); // Debug number of labels
     console.log('Currency rates loaded:', Object.keys(currencyRates).length > 0);
     console.log('Available currencies:', Object.keys(currencyRates));
+    console.log('Dataset labels:', mainChart.data.datasets.map(ds => ds.label)); // Debug dataset labels
     
     // Update chart theme
     updateChartTheme();
@@ -1043,14 +1044,6 @@ function convertDataToCurrency(data, targetCurrency, sourceCurrency) {
 function calculateIndexWithoutCurrencyChanges(data, targetCurrency, sourceCurrency) {
     console.log('calculateIndexWithoutCurrencyChanges called with:', { targetCurrency, sourceCurrency, dataLength: data.length });
     console.log('Available currency rates:', Object.keys(currencyRates));
-    
-    if (targetCurrency === sourceCurrency) {
-        console.log('Same currency, returning original data');
-        return data.map(item => ({
-            date: item.date,
-            value: item.close
-        }));
-    }
     
     // Check if we have the required currency rates
     if (!currencyRates[targetCurrency] || !currencyRates[sourceCurrency]) {
