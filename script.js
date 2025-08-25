@@ -1099,23 +1099,44 @@ function updateStatistics() {
     // Calculate volatility
     const volatility = calculateVolatility(convertedData);
     
-    // Update DOM
-    elements.currentPrice.textContent = formatCurrency(currentPrice, selectedCurrency);
-    elements.priceChange.textContent = `${formatCurrency(priceChange, selectedCurrency)} (${priceChangePercent.toFixed(2)}%)`;
-    elements.priceChange.className = `stat-change ${priceChange >= 0 ? 'positive' : 'negative'}`;
+    // Calculate values in both currencies
+    const currentPriceUSD = data[data.length - 1].close;
+    const currentPriceNOK = currentPriceUSD * (currencyRates.NOK / currencyRates.USD);
+    const priceChangeUSD = data[data.length - 1].close - (data[data.length - 2]?.close || data[data.length - 1].close);
+    const priceChangeNOK = priceChangeUSD * (currencyRates.NOK / currencyRates.USD);
+    const totalReturnUSD = data[data.length - 1].close - data[0].close;
+    const totalReturnNOK = totalReturnUSD * (currencyRates.NOK / currencyRates.USD);
     
-    elements.totalReturn.textContent = `${totalReturn.toFixed(2)}%`;
-    elements.returnChange.textContent = `${formatCurrency(currentPrice - firstPrice, selectedCurrency)}`;
-    elements.returnChange.className = `stat-change ${totalReturn >= 0 ? 'positive' : 'negative'}`;
-    
-    elements.currencyImpact.textContent = `${currencyImpact.toFixed(2)}%`;
-    
-    // Calculate the actual currency impact value for display
+    // Calculate currency impact values in both currencies
     const currencyImpactData = calculateCurrencyImpactOverTime(data, selectedCurrency, indexInfo.currency);
     const totalCurrencyImpactValue = currencyImpactData.reduce((sum, item) => sum + item.impact, 0);
-    elements.currencyChange.textContent = formatCurrency(totalCurrencyImpactValue, selectedCurrency);
-    elements.currencyChange.className = `stat-change ${currencyImpact >= 0 ? 'positive' : 'negative'}`;
+    const currencyImpactUSD = totalCurrencyImpactValue / (currencyRates[selectedCurrency] / currencyRates.USD);
+    const currencyImpactNOK = currencyImpactUSD * (currencyRates.NOK / currencyRates.USD);
     
+    // Update DOM with dual currency display
+    if (selectedCurrency === 'NOK') {
+        elements.currentPrice.textContent = `${formatCurrency(currentPriceNOK, 'NOK')} / ${formatCurrency(currentPriceUSD, 'USD')}`;
+        elements.priceChange.textContent = `${formatCurrency(priceChangeNOK, 'NOK')} / ${formatCurrency(priceChangeUSD, 'USD')} (${priceChangePercent.toFixed(2)}%)`;
+        elements.returnChange.textContent = `${formatCurrency(totalReturnNOK, 'NOK')} / ${formatCurrency(totalReturnUSD, 'USD')}`;
+        elements.currencyChange.textContent = `${formatCurrency(currencyImpactNOK, 'NOK')} / ${formatCurrency(currencyImpactUSD, 'USD')}`;
+    } else {
+        elements.currentPrice.textContent = `${formatCurrency(currentPriceUSD, 'USD')} / ${formatCurrency(currentPriceNOK, 'NOK')}`;
+        elements.priceChange.textContent = `${formatCurrency(priceChangeUSD, 'USD')} / ${formatCurrency(priceChangeNOK, 'NOK')} (${priceChangePercent.toFixed(2)}%)`;
+        elements.returnChange.textContent = `${formatCurrency(totalReturnUSD, 'USD')} / ${formatCurrency(totalReturnNOK, 'NOK')}`;
+        elements.currencyChange.textContent = `${formatCurrency(currencyImpactUSD, 'USD')} / ${formatCurrency(currencyImpactNOK, 'NOK')}`;
+    }
+    
+    // Add dual-currency class for better styling
+    elements.currentPrice.classList.add('dual-currency');
+    elements.priceChange.classList.add('dual-currency');
+    elements.returnChange.classList.add('dual-currency');
+    elements.currencyChange.classList.add('dual-currency');
+    
+    elements.priceChange.className = `stat-change dual-currency ${priceChange >= 0 ? 'positive' : 'negative'}`;
+    elements.totalReturn.textContent = `${totalReturn.toFixed(2)}%`;
+    elements.returnChange.className = `stat-change dual-currency ${totalReturn >= 0 ? 'positive' : 'negative'}`;
+    elements.currencyImpact.textContent = `${currencyImpact.toFixed(2)}%`;
+    elements.currencyChange.className = `stat-change dual-currency ${currencyImpact >= 0 ? 'positive' : 'negative'}`;
     elements.volatility.textContent = `${volatility.toFixed(2)}%`;
     elements.volatilityChange.textContent = 'Annualized';
 }
