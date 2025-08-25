@@ -1513,64 +1513,32 @@ function findClosestRate(targetDate) {
 // Calculate index performance without currency changes (using starting rate)
 function calculateIndexWithoutCurrencyChanges(data, targetCurrency, sourceCurrency) {
     console.log('calculateIndexWithoutCurrencyChanges called with:', { targetCurrency, sourceCurrency, dataLength: data.length });
-    console.log('Available currency rates:', currencyRates);
     
-    // Check if we have the required currency rates
-    if (!currencyRates[targetCurrency] || !currencyRates[sourceCurrency]) {
-        console.error('Missing currency rates:', { targetCurrency, sourceCurrency, availableRates: Object.keys(currencyRates) });
+    // Check if we have historical rates
+    if (!historicalRates || historicalRates.length === 0) {
+        console.error('No historical rates available for purple line calculation');
         return [];
     }
     
-    // For the purple line, we need to simulate what the exchange rate was at the start of the period
-    // Since we don't have historical exchange rates, we'll use a different approach:
-    // We'll calculate what the S&P 500 would look like if the exchange rate had stayed constant
+    // Get the start date of the selected period
+    const startDate = data[0].date;
     
-    // Get the current exchange rate
-    const currentRate = currencyRates[targetCurrency] / currencyRates[sourceCurrency];
+    // Find the exchange rate at the start of the selected period
+    const startRateData = historicalRates.find(rate => 
+        rate.date.toDateString() === startDate.toDateString()
+    );
     
-    // Calculate a realistic starting rate based on the selected timeframe
-    const timeframe = elements.timeframeSelect.value;
-    let rateAdjustment = 1.0;
-    
-    // Adjust the starting rate based on timeframe to simulate historical rates
-    switch(timeframe) {
-        case '1d':
-            rateAdjustment = 0.999; // Very small change for 1 day
-            break;
-        case '5d':
-            rateAdjustment = 0.995; // Small change for 5 days
-            break;
-        case '1mo':
-            rateAdjustment = 0.98; // 2% change for 1 month
-            break;
-        case '3mo':
-            rateAdjustment = 0.95; // 5% change for 3 months
-            break;
-        case '6mo':
-            rateAdjustment = 0.90; // 10% change for 6 months
-            break;
-        case '1y':
-            rateAdjustment = 0.85; // 15% change for 1 year
-            break;
-        case '2y':
-            rateAdjustment = 0.80; // 20% change for 2 years
-            break;
-        case '5y':
-            rateAdjustment = 0.70; // 30% change for 5 years
-            break;
-        case 'max':
-            rateAdjustment = 0.60; // 40% change for max period
-            break;
-        default:
-            rateAdjustment = 0.90; // Default 10% change
+    if (!startRateData) {
+        console.error('Could not find exchange rate for start date:', startDate);
+        return [];
     }
     
-    const startRate = currentRate * rateAdjustment;
+    const startRate = startRateData.rate;
     
-    console.log('Purple line rates - Current:', currentRate, 'Starting (simulated):', startRate, 'Timeframe:', timeframe, 'Adjustment:', rateAdjustment);
+    console.log('Purple line calculation - Start date:', startDate.toDateString(), 'Start rate:', startRate);
     
     // Calculate the purple line: S&P 500 performance using the starting exchange rate
-    // This shows what the performance would look like if the exchange rate never changed
+    // This shows what the performance would look like if the exchange rate never changed from the start
     const result = data.map(item => ({
         date: item.date,
         value: item.close * startRate // Use the SAME starting rate for ALL data points
@@ -1579,7 +1547,6 @@ function calculateIndexWithoutCurrencyChanges(data, targetCurrency, sourceCurren
     console.log('Purple line calculation result:', {
         targetCurrency,
         sourceCurrency,
-        currentRate,
         startRate,
         firstValue: result[0]?.value,
         lastValue: result[result.length - 1]?.value,
