@@ -379,6 +379,20 @@ body {
     line-height: 1.3;
 }
 
+.percent-display {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-top: 0.25rem;
+    opacity: 0.9;
+}
+
+.stat-change.dual-currency {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+}
+
 .stat-change {
     font-size: 1rem;
     font-weight: 500;

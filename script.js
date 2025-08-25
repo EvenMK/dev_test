@@ -1068,21 +1068,31 @@ function updateStatistics() {
     const totalReturnUSD = data[data.length - 1].close - data[0].close;
     const totalReturnNOK = totalReturnUSD * (currencyRates.NOK / currencyRates.USD);
     
-    // Calculate currency impact values in both currencies
+    // Calculate percentages for both currencies
+    const priceChangePercentUSD = (priceChangeUSD / (data[data.length - 2]?.close || data[data.length - 1].close)) * 100;
+    const priceChangePercentNOK = (priceChangeNOK / (currentPriceNOK - priceChangeNOK)) * 100;
+    const totalReturnPercentUSD = (totalReturnUSD / data[0].close) * 100;
+    const totalReturnPercentNOK = (totalReturnNOK / (currentPriceNOK - totalReturnNOK)) * 100;
+    
+    // Calculate currency impact values and percentages in both currencies
     const currencyImpactData = calculateCurrencyImpactOverTime(data, selectedCurrency, indexInfo.currency);
     const totalCurrencyImpactValue = currencyImpactData.reduce((sum, item) => sum + item.impact, 0);
     const currencyImpactUSD = totalCurrencyImpactValue / (currencyRates[selectedCurrency] / currencyRates.USD);
     const currencyImpactNOK = currencyImpactUSD * (currencyRates.NOK / currencyRates.USD);
     
-    // Update DOM with dual currency display
+    // Calculate currency impact percentages
+    const currencyImpactPercentUSD = (currencyImpactUSD / (currentPriceUSD - currencyImpactUSD)) * 100;
+    const currencyImpactPercentNOK = (currencyImpactNOK / (currentPriceNOK - currencyImpactNOK)) * 100;
+    
+    // Update DOM with dual currency display and percentages
     if (selectedCurrency === 'NOK') {
         elements.currentPrice.textContent = `${formatCurrency(currentPriceNOK, 'NOK')} / ${formatCurrency(currentPriceUSD, 'USD')}`;
-        elements.priceChange.textContent = `${formatCurrency(priceChangeNOK, 'NOK')} / ${formatCurrency(priceChangeUSD, 'USD')} (${priceChangePercent.toFixed(2)}%)`;
+        elements.priceChange.textContent = `${formatCurrency(priceChangeNOK, 'NOK')} / ${formatCurrency(priceChangeUSD, 'USD')}`;
         elements.returnChange.textContent = `${formatCurrency(totalReturnNOK, 'NOK')} / ${formatCurrency(totalReturnUSD, 'USD')}`;
         elements.currencyChange.textContent = `${formatCurrency(currencyImpactNOK, 'NOK')} / ${formatCurrency(currencyImpactUSD, 'USD')}`;
     } else {
         elements.currentPrice.textContent = `${formatCurrency(currentPriceUSD, 'USD')} / ${formatCurrency(currentPriceNOK, 'NOK')}`;
-        elements.priceChange.textContent = `${formatCurrency(priceChangeUSD, 'USD')} / ${formatCurrency(priceChangeNOK, 'NOK')} (${priceChangePercent.toFixed(2)}%)`;
+        elements.priceChange.textContent = `${formatCurrency(priceChangeUSD, 'USD')} / ${formatCurrency(priceChangeNOK, 'NOK')}`;
         elements.returnChange.textContent = `${formatCurrency(totalReturnUSD, 'USD')} / ${formatCurrency(totalReturnNOK, 'NOK')}`;
         elements.currencyChange.textContent = `${formatCurrency(currencyImpactUSD, 'USD')} / ${formatCurrency(currencyImpactNOK, 'NOK')}`;
     }
@@ -1093,10 +1103,23 @@ function updateStatistics() {
     elements.returnChange.classList.add('dual-currency');
     elements.currencyChange.classList.add('dual-currency');
     
+    // Update percentages with dual currency display
     elements.priceChange.className = `stat-change dual-currency ${priceChange >= 0 ? 'positive' : 'negative'}`;
-    elements.totalReturn.textContent = `${totalReturn.toFixed(2)}%`;
+    
+    // Add percentage display for price change
+    const priceChangePercentDisplay = `${priceChangePercentNOK.toFixed(2)}% / ${priceChangePercentUSD.toFixed(2)}%`;
+    if (elements.priceChange.querySelector('.percent-display')) {
+        elements.priceChange.querySelector('.percent-display').textContent = priceChangePercentDisplay;
+    } else {
+        const percentSpan = document.createElement('span');
+        percentSpan.className = 'percent-display';
+        percentSpan.textContent = priceChangePercentDisplay;
+        elements.priceChange.appendChild(percentSpan);
+    }
+    
+    elements.totalReturn.textContent = `${totalReturnPercentNOK.toFixed(2)}% / ${totalReturnPercentUSD.toFixed(2)}%`;
     elements.returnChange.className = `stat-change dual-currency ${totalReturn >= 0 ? 'positive' : 'negative'}`;
-    elements.currencyImpact.textContent = `${currencyImpact.toFixed(2)}%`;
+    elements.currencyImpact.textContent = `${currencyImpactPercentNOK.toFixed(2)}% / ${currencyImpactPercentUSD.toFixed(2)}%`;
     elements.currencyChange.className = `stat-change dual-currency ${currencyImpact >= 0 ? 'positive' : 'negative'}`;
     elements.volatility.textContent = `${volatility.toFixed(2)}%`;
     elements.volatilityChange.textContent = 'Annualized';
