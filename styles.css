@@ -294,6 +294,16 @@ body {
     height: 100% !important;
 }
 
+/* Exchange Rate Chart - Smaller size */
+.chart-section:nth-child(3) .chart-container {
+    height: 250px;
+}
+
+#exchangeChart {
+    width: 100% !important;
+    height: 100% !important;
+}
+
 
 
 .loading-overlay {

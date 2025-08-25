@@ -96,6 +96,24 @@
             </div>
         </div>
 
+        <!-- Exchange Rate Chart Section -->
+        <div class="chart-section">
+            <div class="chart-header">
+                <h3 id="exchange-chart-title">USD/NOK Exchange Rate</h3>
+                <div class="data-info">
+                    <span id="exchange-last-updated">Last updated: --</span>
+                    <span id="exchange-data-source">Source: Norges Bank</span>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div id="exchangeChart" role="img" aria-label="USD to NOK exchange rate chart showing historical rates"></div>
+                <div id="exchange-chart-loading" class="loading-overlay" aria-live="polite">
+                    <div class="loading-spinner" aria-hidden="true"></div>
+                    <p>Loading exchange rate data...</p>
+                </div>
+            </div>
+        </div>
+
         <!-- Statistics Section -->
         <div class="stats-section">
             <div class="stats-grid">

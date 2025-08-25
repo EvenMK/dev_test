@@ -22,6 +22,7 @@
 
 // Global variables
 let mainChart = null;
+let exchangeChart = null;
 let currentData = null;
 let currencyRates = {};
 let isDarkMode = true;
@@ -131,7 +132,10 @@ function initializeElements() {
         volatilityChange: document.getElementById('volatility-change'),
         performanceTbody: document.getElementById('performance-tbody'),
         marketOverview: document.getElementById('market-overview'),
-        chartTitle: document.getElementById('chart-title')
+        chartTitle: document.getElementById('chart-title'),
+        exchangeChart: document.getElementById('exchangeChart'),
+        exchangeChartTitle: document.getElementById('exchange-chart-title'),
+        exchangeLastUpdated: document.getElementById('exchange-last-updated')
     };
 }
 
@@ -198,6 +202,9 @@ function setupEventListeners() {
     window.addEventListener('resize', debounce(() => {
         if (mainChart) {
             mainChart.resize();
+        }
+        if (exchangeChart) {
+            exchangeChart.resize();
         }
     }, 250));
     
@@ -275,6 +282,31 @@ function updateChartTitle() {
     }
 }
 
+// Update exchange chart title dynamically
+function updateExchangeChartTitle() {
+    const timeframe = elements.timeframeSelect.value;
+    
+    // Format timeframe for display
+    const timeframeMap = {
+        '1d': '1 Day',
+        '5d': '5 Days', 
+        '1mo': '1 Month',
+        '3mo': '3 Months',
+        '6mo': '6 Months',
+        '1y': '1 Year',
+        '2y': '2 Years',
+        '5y': '5 Years',
+        'max': 'Max'
+    };
+    
+    const timeframeDisplay = timeframeMap[timeframe] || timeframe;
+    const title = `USD/NOK Exchange Rate (${timeframeDisplay})`;
+    
+    if (elements.exchangeChartTitle) {
+        elements.exchangeChartTitle.textContent = title;
+    }
+}
+
 function updateChartTheme() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark' || !document.documentElement.hasAttribute('data-theme');
     
@@ -288,7 +320,29 @@ function updateChartTheme() {
         mainChart.update();
     }
     
+    if (exchangeChart) {
+        exchangeChart.options.plugins.legend.labels.color = isDark ? '#ffffff' : '#212529';
+        exchangeChart.options.scales.x.ticks.color = isDark ? '#b0b0b0' : '#6c757d';
+        exchangeChart.options.scales.y.ticks.color = isDark ? '#b0b0b0' : '#6c757d';
+        exchangeChart.options.scales.x.grid.color = isDark ? '#333333' : '#dee2e6';
+        exchangeChart.options.scales.y.grid.color = isDark ? '#333333' : '#dee2e6';
+        
+        exchangeChart.update();
+    }
+}
 
+function updateExchangeChartTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark' || !document.documentElement.hasAttribute('data-theme');
+    
+    if (exchangeChart) {
+        exchangeChart.options.plugins.legend.labels.color = isDark ? '#ffffff' : '#212529';
+        exchangeChart.options.scales.x.ticks.color = isDark ? '#b0b0b0' : '#6c757d';
+        exchangeChart.options.scales.y.ticks.color = isDark ? '#b0b0b0' : '#6c757d';
+        exchangeChart.options.scales.x.grid.color = isDark ? '#333333' : '#dee2e6';
+        exchangeChart.options.scales.y.grid.color = isDark ? '#333333' : '#dee2e6';
+        
+        exchangeChart.update();
+    }
 }
 
 // Fullscreen functionality
@@ -995,6 +1049,9 @@ function processFinancialData(result) {
 function renderChart() {
     // Render main chart with currency impact line
     renderMainChart();
+    
+    // Render exchange rate chart
+    renderExchangeChart();
 }
 
 // Render the main chart
@@ -1216,6 +1273,140 @@ function renderMainChart() {
     
     // Update chart theme
     updateChartTheme();
+}
+
+// Render the exchange rate chart
+function renderExchangeChart() {
+    if (exchangeChart) {
+        exchangeChart.destroy();
+    }
+    
+    // Create canvas element if it doesn't exist
+    let canvas = elements.exchangeChart.querySelector('canvas');
+    if (!canvas) {
+        canvas = document.createElement('canvas');
+        elements.exchangeChart.appendChild(canvas);
+    }
+    const ctx = canvas.getContext('2d');
+    
+    // Check if we have historical rates
+    if (!historicalRates || historicalRates.length === 0) {
+        console.log('No historical rates available for exchange chart');
+        return;
+    }
+    
+    // Prepare data for the exchange rate chart
+    const chartData = {
+        labels: historicalRates.map(rate => rate.date),
+        datasets: [{
+            label: 'USD/NOK Exchange Rate',
+            data: historicalRates.map(rate => rate.rate),
+            borderColor: '#f59e0b',
+            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.05,
+            pointRadius: 0,
+            pointHoverRadius: 2,
+            pointHoverBackgroundColor: '#f59e0b',
+            pointHoverBorderColor: '#ffffff',
+            pointHoverBorderWidth: 1,
+            yAxisID: 'y'
+        }]
+    };
+    
+    const config = {
+        type: 'line',
+        data: chartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+                duration: 0
+            },
+            hover: {
+                animationDuration: 0
+            },
+            responsiveAnimationDuration: 0,
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        color: isDarkMode ? '#ffffff' : '#212529',
+                        font: {
+                            size: 12,
+                            weight: '600'
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: isDarkMode ? '#1e1e1e' : '#ffffff',
+                    titleColor: isDarkMode ? '#ffffff' : '#212529',
+                    bodyColor: isDarkMode ? '#b0b0b0' : '#6c757d',
+                    borderColor: isDarkMode ? '#333333' : '#dee2e6',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    displayColors: false,
+                    animation: {
+                        duration: 0
+                    },
+                    callbacks: {
+                        title: function(context) {
+                            return new Date(context[0].parsed.x).toLocaleDateString();
+                        },
+                        label: function(context) {
+                            return `USD/NOK: ${context.parsed.y.toFixed(4)}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'day',
+                        displayFormats: {
+                            day: 'MMM dd'
+                        }
+                    },
+                    grid: {
+                        color: isDarkMode ? '#333333' : '#dee2e6'
+                    },
+                    ticks: {
+                        color: isDarkMode ? '#b0b0b0' : '#6c757d',
+                        maxTicksLimit: 8
+                    }
+                },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    grid: {
+                        color: isDarkMode ? '#333333' : '#dee2e6'
+                    },
+                    ticks: {
+                        color: isDarkMode ? '#b0b0b0' : '#6c757d',
+                        callback: function(value) {
+                            return value.toFixed(2);
+                        }
+                    }
+                }
+            }
+        }
+    };
+    
+    exchangeChart = new Chart(ctx, config);
+    
+    // Update exchange chart title
+    updateExchangeChartTitle();
+    
+    // Update exchange chart theme
+    updateExchangeChartTheme();
 }
 
 
