@@ -1270,24 +1270,20 @@ function renderExchangeChart() {
         return;
     }
     
-    // Limit data points for better performance (max 100 points)
-    const maxPoints = 100;
-    const step = Math.max(1, Math.floor(historicalRates.length / maxPoints));
-    const sampledRates = historicalRates.filter((_, index) => index % step === 0);
-    
-    console.log(`Exchange chart: Using ${sampledRates.length} points from ${historicalRates.length} total rates`);
+    // Use all historical rates for the exchange rate chart (no sampling)
+    console.log(`Exchange chart: Using all ${historicalRates.length} exchange rate points`);
     
     // Prepare data for the exchange rate chart
     const chartData = {
-        labels: sampledRates.map(rate => rate.date),
+        labels: historicalRates.map(rate => rate.date),
         datasets: [{
             label: 'USD/NOK Exchange Rate',
-            data: sampledRates.map(rate => rate.rate),
+            data: historicalRates.map(rate => rate.rate),
             borderColor: '#f59e0b',
             backgroundColor: 'rgba(245, 158, 11, 0.1)',
             borderWidth: 2,
-            fill: false, // Disable fill for better performance
-            tension: 0, // Disable tension for better performance
+            fill: false,
+            tension: 0,
             pointRadius: 0,
             pointHoverRadius: 2,
             pointHoverBackgroundColor: '#f59e0b',
@@ -1603,48 +1599,58 @@ function updateStatistics() {
     const indexSymbol = elements.indexSelect.value;
     const indexInfo = indexConfig[indexSymbol];
     
-    // Convert to selected currency
-    const convertedData = convertDataToCurrency(data, selectedCurrency, indexInfo.currency);
-    
-    const currentPrice = convertedData[convertedData.length - 1].close;
-    const previousPrice = convertedData[convertedData.length - 2]?.close || currentPrice;
-    const firstPrice = convertedData[0].close;
-    
-    // Calculate changes
-    const priceChange = currentPrice - previousPrice;
-    const priceChangePercent = (priceChange / previousPrice) * 100;
-    const totalReturn = ((currentPrice - firstPrice) / firstPrice) * 100;
-    
-    // Calculate currency impact
-    const currencyImpact = calculateCurrencyImpact(data, selectedCurrency, indexInfo.currency);
-    
-    // Calculate volatility
-    const volatility = calculateVolatility(convertedData);
-    
-    // Calculate values in both currencies
+    // Get current prices in both currencies
     const currentPriceUSD = data[data.length - 1].close;
     const currentPriceNOK = currentPriceUSD * (currencyRates.NOK / currencyRates.USD);
-    const priceChangeUSD = data[data.length - 1].close - (data[data.length - 2]?.close || data[data.length - 1].close);
-    const priceChangeNOK = priceChangeUSD * (currencyRates.NOK / currencyRates.USD);
-    const totalReturnUSD = data[data.length - 1].close - data[0].close;
-    const totalReturnNOK = totalReturnUSD * (currencyRates.NOK / currencyRates.USD);
     
-    // Calculate percentages for both currencies correctly
-    const priceChangePercentUSD = (priceChangeUSD / (data[data.length - 2]?.close || data[data.length - 1].close)) * 100;
-    const priceChangePercentNOK = (priceChangeNOK / (currentPriceNOK - priceChangeNOK)) * 100;
+    // Get previous day prices for change calculation
+    const previousPriceUSD = data[data.length - 2]?.close || currentPriceUSD;
+    const previousPriceNOK = previousPriceUSD * (currencyRates.NOK / currencyRates.USD);
     
-    // Calculate total return percentages for each currency
-    const totalReturnPercentUSD = (totalReturnUSD / data[0].close) * 100;
-    const totalReturnPercentNOK = (totalReturnNOK / (currentPriceNOK - totalReturnNOK)) * 100;
+    // Get start period prices
+    const startPriceUSD = data[0].close;
+    const startPriceNOK = startPriceUSD * (currencyRates.NOK / currencyRates.USD);
     
-    // Calculate currency impact using real historical rates
+    // Calculate 1-day changes
+    const priceChangeUSD = currentPriceUSD - previousPriceUSD;
+    const priceChangeNOK = currentPriceNOK - previousPriceNOK;
+    const priceChangePercentUSD = (priceChangeUSD / previousPriceUSD) * 100;
+    const priceChangePercentNOK = (priceChangeNOK / previousPriceNOK) * 100;
+    
+    // Calculate total returns for the selected period
+    const totalReturnUSD = currentPriceUSD - startPriceUSD;
+    const totalReturnNOK = currentPriceNOK - startPriceNOK;
+    const totalReturnPercentUSD = (totalReturnUSD / startPriceUSD) * 100;
+    const totalReturnPercentNOK = (totalReturnNOK / startPriceNOK) * 100;
+    
+    // Calculate volatility
+    const volatility = calculateVolatility(data);
+    
+    // Update first visual box: Current Price
+    elements.currentPrice.textContent = `${formatCurrency(currentPriceNOK, 'NOK')} / ${formatCurrency(currentPriceUSD, 'USD')}`;
+    elements.priceChange.textContent = `${formatCurrency(priceChangeNOK, 'NOK')} / ${formatCurrency(priceChangeUSD, 'USD')}`;
+    
+    // Add percentage display for price change
+    const priceChangePercentDisplay = `${priceChangePercentNOK.toFixed(2)}% / ${priceChangePercentUSD.toFixed(2)}%`;
+    if (elements.priceChange.querySelector('.percent-display')) {
+        elements.priceChange.querySelector('.percent-display').textContent = priceChangePercentDisplay;
+    } else {
+        const percentSpan = document.createElement('span');
+        percentSpan.className = 'percent-display';
+        percentSpan.textContent = priceChangePercentDisplay;
+        elements.priceChange.appendChild(percentSpan);
+    }
+    
+    // Update second visual box: Total Return
+    elements.totalReturn.textContent = `${totalReturnPercentNOK.toFixed(2)}% / ${totalReturnPercentUSD.toFixed(2)}%`;
+    elements.returnChange.textContent = `${formatCurrency(totalReturnNOK, 'NOK')} / ${formatCurrency(totalReturnUSD, 'USD')}`;
+    
+    // Update currency impact (third box)
     let currencyImpactNOK = 0;
     let currencyImpactPercentNOK = 0;
-    let currencyImpactUSD = 0;
-    let currencyImpactPercentUSD = 0;
     
     if (historicalRates && historicalRates.length > 0 && selectedCurrency === 'NOK') {
-        // Get the actual start and end rates from historical data
+        // Calculate currency impact using historical rates
         const startDate = data[0].date;
         const endDate = data[data.length - 1].date;
         
@@ -1670,10 +1676,6 @@ function updateStatistics() {
             currencyImpactNOK = actualEndValueNOK - endValueNOKWithStartRate;
             currencyImpactPercentNOK = (currencyImpactNOK / startValueNOK) * 100;
             
-            // USD impact is 0 since we're measuring NOK impact
-            currencyImpactUSD = 0;
-            currencyImpactPercentUSD = 0;
-            
             console.log('Real currency impact calculation:', {
                 startRate: startRate.toFixed(4),
                 endRate: endRate.toFixed(4),
@@ -1682,58 +1684,17 @@ function updateStatistics() {
                 currencyImpactPercentNOK: currencyImpactPercentNOK.toFixed(2) + '%'
             });
         }
-    } else if (selectedCurrency === 'USD') {
-        // No currency impact when viewing in USD
-        currencyImpactNOK = 0;
-        currencyImpactPercentNOK = 0;
-        currencyImpactUSD = 0;
-        currencyImpactPercentUSD = 0;
     }
     
-    // Update DOM with dual currency display and percentages
-    if (selectedCurrency === 'NOK') {
-        elements.currentPrice.textContent = `${formatCurrency(currentPriceNOK, 'NOK')} / ${formatCurrency(currentPriceUSD, 'USD')}`;
-        elements.priceChange.textContent = `${formatCurrency(priceChangeNOK, 'NOK')} / ${formatCurrency(priceChangeUSD, 'USD')}`;
-        elements.returnChange.textContent = `${formatCurrency(totalReturnNOK, 'NOK')} / ${formatCurrency(totalReturnUSD, 'USD')}`;
-        elements.currencyChange.textContent = `${formatCurrency(currencyImpactNOK, 'NOK')} / ${formatCurrency(currencyImpactUSD, 'USD')}`;
-    } else {
-        elements.currentPrice.textContent = `${formatCurrency(currentPriceUSD, 'USD')} / ${formatCurrency(currentPriceNOK, 'NOK')}`;
-        elements.priceChange.textContent = `${formatCurrency(priceChangeUSD, 'USD')} / ${formatCurrency(priceChangeNOK, 'NOK')}`;
-        elements.returnChange.textContent = `${formatCurrency(totalReturnUSD, 'USD')} / ${formatCurrency(totalReturnNOK, 'NOK')}`;
-        elements.currencyChange.textContent = `${formatCurrency(currencyImpactUSD, 'USD')} / ${formatCurrency(currencyImpactNOK, 'NOK')}`;
-    }
+    elements.currencyImpact.textContent = `${currencyImpactPercentNOK.toFixed(2)}%`;
+    elements.currencyChange.textContent = `${formatCurrency(currencyImpactNOK, 'NOK')}`;
     
-    // Add dual-currency class for better styling
-    elements.currentPrice.classList.add('dual-currency');
-    elements.priceChange.classList.add('dual-currency');
-    elements.returnChange.classList.add('dual-currency');
-    elements.currencyChange.classList.add('dual-currency');
-    
-    // Update percentages with dual currency display
-    elements.priceChange.className = `stat-change dual-currency ${priceChange >= 0 ? 'positive' : 'negative'}`;
-    
-    // Add percentage display for price change
-    const priceChangePercentDisplay = `${priceChangePercentNOK.toFixed(2)}% / ${priceChangePercentUSD.toFixed(2)}%`;
-    if (elements.priceChange.querySelector('.percent-display')) {
-        elements.priceChange.querySelector('.percent-display').textContent = priceChangePercentDisplay;
-    } else {
-        const percentSpan = document.createElement('span');
-        percentSpan.className = 'percent-display';
-        percentSpan.textContent = priceChangePercentDisplay;
-        elements.priceChange.appendChild(percentSpan);
-    }
-    
-    // Update percentage displays with correct values for each currency
-    if (selectedCurrency === 'NOK') {
-        elements.totalReturn.textContent = `${totalReturnPercentNOK.toFixed(2)}% / ${totalReturnPercentUSD.toFixed(2)}%`;
-        elements.currencyImpact.textContent = `${currencyImpactPercentNOK.toFixed(2)}% / ${currencyImpactPercentUSD.toFixed(2)}%`;
-    } else {
-        elements.totalReturn.textContent = `${totalReturnPercentUSD.toFixed(2)}% / ${totalReturnPercentNOK.toFixed(2)}%`;
-        elements.currencyImpact.textContent = `${currencyImpactPercentUSD.toFixed(2)}% / ${currencyImpactPercentNOK.toFixed(2)}%`;
-    }
-    
-    elements.returnChange.className = `stat-change dual-currency ${totalReturn >= 0 ? 'positive' : 'negative'}`;
+    // Update styling classes
+    elements.priceChange.className = `stat-change dual-currency ${priceChangeUSD >= 0 ? 'positive' : 'negative'}`;
+    elements.returnChange.className = `stat-change dual-currency ${totalReturnUSD >= 0 ? 'positive' : 'negative'}`;
     elements.currencyChange.className = `stat-change dual-currency ${currencyImpactNOK >= 0 ? 'positive' : 'negative'}`;
+    
+    // Update volatility
     elements.volatility.textContent = `${volatility.toFixed(2)}%`;
     elements.volatilityChange.textContent = 'Annualized';
 }
