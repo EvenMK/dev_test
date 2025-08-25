@@ -806,8 +806,19 @@ function renderMainChart() {
     
     // Calculate index performance without currency changes (using starting rate)
     let indexWithoutCurrencyChangesData = [];
+    console.log('Currency rates check:', Object.keys(currencyRates), 'Length:', Object.keys(currencyRates).length);
+    console.log('Selected currency:', selectedCurrency, 'Index currency:', indexInfo.currency);
+    
     if (Object.keys(currencyRates).length > 0) {
         indexWithoutCurrencyChangesData = calculateIndexWithoutCurrencyChanges(currentData.data, selectedCurrency, indexInfo.currency);
+        console.log('Purple line calculation result:', indexWithoutCurrencyChangesData.length, 'data points');
+    } else {
+        console.log('No currency rates available for purple line calculation');
+        // Use fallback rates if no currency rates are loaded
+        const fallbackRates = { USD: 1, NOK: 10.5 };
+        currencyRates = fallbackRates;
+        indexWithoutCurrencyChangesData = calculateIndexWithoutCurrencyChanges(currentData.data, selectedCurrency, indexInfo.currency);
+        console.log('Using fallback rates for purple line:', indexWithoutCurrencyChangesData.length, 'data points');
     }
     
     const datasets = [
@@ -850,12 +861,14 @@ function renderMainChart() {
     // Add index performance line without currency changes
     if (indexWithoutCurrencyChangesData.length > 0) {
         console.log('Adding purple line with data:', indexWithoutCurrencyChangesData.length, 'points');
-        datasets.push({
+        console.log('Purple line sample data:', indexWithoutCurrencyChangesData.slice(0, 3).map(item => item.value));
+        
+        const purpleDataset = {
             label: `${indexInfo.name} (No Currency Changes)`,
             data: indexWithoutCurrencyChangesData.map(item => item.value),
             borderColor: '#4f46e5', // Purple color for clarity
             backgroundColor: 'rgba(79, 70, 229, 0.1)',
-            borderWidth: 2,
+            borderWidth: 3, // Make it thicker to ensure visibility
             fill: false,
             tension: 0.1,
             pointRadius: 0,
@@ -864,7 +877,10 @@ function renderMainChart() {
             pointHoverBorderColor: '#ffffff',
             pointHoverBorderWidth: 2,
             yAxisID: 'y'
-        });
+        };
+        
+        datasets.push(purpleDataset);
+        console.log('Purple dataset added. Total datasets:', datasets.length);
     } else {
         console.log('No purple line data available. Currency rates:', Object.keys(currencyRates));
     }
@@ -959,6 +975,10 @@ function renderMainChart() {
     
     mainChart = new Chart(ctx, config);
     
+    console.log('Chart created with datasets:', mainChart.data.datasets.length);
+    console.log('Dataset labels:', mainChart.data.datasets.map(ds => ds.label));
+    console.log('Dataset colors:', mainChart.data.datasets.map(ds => ds.borderColor));
+    
     // Update chart title dynamically
     updateChartTitle();
     
@@ -1033,13 +1053,18 @@ function convertDataToCurrency(data, targetCurrency, sourceCurrency) {
 
 // Calculate index performance without currency changes (using starting rate)
 function calculateIndexWithoutCurrencyChanges(data, targetCurrency, sourceCurrency) {
+    console.log('calculateIndexWithoutCurrencyChanges called with:', { targetCurrency, sourceCurrency, dataLength: data.length });
+    console.log('Available currency rates:', currencyRates);
+    
     // Check if we have the required currency rates
     if (!currencyRates[targetCurrency] || !currencyRates[sourceCurrency]) {
+        console.error('Missing currency rates:', { targetCurrency, sourceCurrency, availableRates: Object.keys(currencyRates) });
         return [];
     }
     
     // Get the starting exchange rate for the period
     const startRate = currencyRates[targetCurrency] / currencyRates[sourceCurrency];
+    console.log('Starting exchange rate calculated:', startRate);
     
     // Calculate the purple line: S&P 500 performance using the starting exchange rate
     // This shows what the performance would look like if the exchange rate never changed
@@ -1048,13 +1073,14 @@ function calculateIndexWithoutCurrencyChanges(data, targetCurrency, sourceCurren
         value: item.close * startRate // Use the SAME starting rate for ALL data points
     }));
     
-    console.log('Purple line calculation:', {
+    console.log('Purple line calculation result:', {
         targetCurrency,
         sourceCurrency,
         startRate,
         firstValue: result[0]?.value,
         lastValue: result[result.length - 1]?.value,
-        dataPoints: result.length
+        dataPoints: result.length,
+        sampleValues: result.slice(0, 3).map(r => r.value)
     });
     
     return result;
