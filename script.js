@@ -858,8 +858,8 @@ function renderMainChart() {
         });
     }
 
-    // Add index performance line without currency changes
-    if (indexWithoutCurrencyChangesData.length > 0) {
+    // Add index performance line without currency changes (only when not USD)
+    if (indexWithoutCurrencyChangesData.length > 0 && selectedCurrency !== 'USD') {
         console.log('Adding purple line with data:', indexWithoutCurrencyChangesData.length, 'points');
         console.log('Purple line sample data:', indexWithoutCurrencyChangesData.slice(0, 3).map(item => item.value));
         
@@ -882,7 +882,11 @@ function renderMainChart() {
         datasets.push(purpleDataset);
         console.log('Purple dataset added. Total datasets:', datasets.length);
     } else {
-        console.log('No purple line data available. Currency rates:', Object.keys(currencyRates));
+        if (selectedCurrency === 'USD') {
+            console.log('USD selected - not showing purple line');
+        } else {
+            console.log('No purple line data available. Currency rates:', Object.keys(currencyRates));
+        }
     }
     
     const chartData = {
@@ -932,7 +936,24 @@ function renderMainChart() {
                             return new Date(context[0].parsed.x).toLocaleDateString();
                         },
                         label: function(context) {
-                            // Simple tooltip without complex calculations
+                            const dataIndex = context[0].dataIndex;
+                            
+                            if (context.datasetIndex === 0) {
+                                // Green line - S&P 500 with current rates
+                                return `${context.dataset.label}: ${formatCurrency(context.parsed.y, selectedCurrency)}`;
+                            } else if (context.datasetIndex === 1) {
+                                // Red line - Currency impact
+                                return `${context.dataset.label}: ${formatCurrency(context.parsed.y, selectedCurrency)}`;
+                            } else if (context.datasetIndex === 2 && selectedCurrency !== 'USD') {
+                                // Purple line - No currency changes (only when not USD)
+                                // Calculate the currency impact as the difference between green and purple lines
+                                const greenValue = context[0].chart.data.datasets[0].data[dataIndex];
+                                const purpleValue = context.parsed.y;
+                                const currencyImpact = greenValue - purpleValue;
+                                
+                                return `${context.dataset.label}: ${formatCurrency(context.parsed.y, selectedCurrency)} (Currency Impact: ${formatCurrency(currencyImpact, selectedCurrency)})`;
+                            }
+                            
                             return `${context.dataset.label}: ${formatCurrency(context.parsed.y, selectedCurrency)}`;
                         }
                     }
