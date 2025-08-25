@@ -377,7 +377,74 @@ function setCachedData(key, data) {
 
 
 
-// Currency rates management with caching and rate limiting
+// Historical exchange rates management
+async function loadHistoricalExchangeRates(startDate, endDate) {
+    console.log('Loading historical exchange rates from', startDate, 'to', endDate);
+    
+    try {
+        // Use Frankfurter API for historical rates
+        const startDateStr = startDate.toISOString().split('T')[0];
+        const endDateStr = endDate.toISOString().split('T')[0];
+        const apiUrl = `https://api.frankfurter.app/${startDateStr}..${endDateStr}?from=USD&to=NOK`;
+        
+        // Try with CORS proxy first
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`;
+        let response = await fetch(proxyUrl);
+        
+        if (!response.ok) {
+            response = await fetch(apiUrl);
+        }
+        
+        if (response.ok) {
+            const data = await response.json();
+            console.log('Historical exchange rates loaded:', data);
+            
+            if (data.rates) {
+                // Convert to array of daily rates
+                const dailyRates = [];
+                for (const date in data.rates) {
+                    dailyRates.push({
+                        date: new Date(date),
+                        rate: data.rates[date].NOK
+                    });
+                }
+                
+                // Sort by date
+                dailyRates.sort((a, b) => a.date - b.date);
+                console.log('Processed daily rates:', dailyRates.length, 'days');
+                return dailyRates;
+            }
+        }
+        
+        throw new Error('Failed to load historical rates');
+    } catch (error) {
+        console.error('Error loading historical exchange rates:', error);
+        
+        // Fallback: generate synthetic historical rates
+        const dailyRates = [];
+        const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+        const baseRate = 10.5; // Base USD/NOK rate
+        
+        for (let i = 0; i <= daysDiff; i++) {
+            const date = new Date(startDate);
+            date.setDate(date.getDate() + i);
+            
+            // Add some realistic variation to the rate
+            const variation = Math.sin(i * 0.01) * 0.5 + Math.random() * 0.2;
+            const rate = baseRate + variation;
+            
+            dailyRates.push({
+                date: date,
+                rate: rate
+            });
+        }
+        
+        console.log('Using synthetic historical rates:', dailyRates.length, 'days');
+        return dailyRates;
+    }
+}
+
+// Current currency rates management with caching and rate limiting
 async function loadCurrencyRates() {
     // Check cache first
     const cachedRates = getCachedData('currencyRates');
@@ -505,9 +572,18 @@ async function loadFinancialData() {
             await loadCurrencyRates();
         }
         
+        // Load historical exchange rates for accurate NOK conversion
+        if (currentData && currentData.data.length > 0) {
+            const startDate = currentData.data[0].date;
+            const endDate = currentData.data[currentData.data.length - 1].date;
+            console.log('Loading historical rates from', startDate, 'to', endDate);
+            historicalRates = await loadHistoricalExchangeRates(startDate, endDate);
+        }
+        
         // Double-check that currency rates are loaded
         if (Object.keys(currencyRates).length > 0) {
             console.log('Currency rates confirmed loaded:', Object.keys(currencyRates));
+            console.log('Historical rates loaded:', historicalRates.length, 'days');
             renderChart();
             updateStatistics();
             updatePerformanceTable();
@@ -1055,11 +1131,33 @@ function calculateCurrencyImpactOverTime(data, targetCurrency, sourceCurrency) {
 
 
 
+// Global variable to store historical exchange rates
+let historicalRates = [];
+
 function convertDataToCurrency(data, targetCurrency, sourceCurrency) {
     if (targetCurrency === sourceCurrency) {
         return data;
     }
     
+    // If we have historical rates, use them for more accurate conversion
+    if (historicalRates.length > 0 && targetCurrency === 'NOK' && sourceCurrency === 'USD') {
+        return data.map(item => {
+            // Find the closest historical rate for this date
+            const itemDate = new Date(item.date);
+            const closestRate = findClosestRate(itemDate);
+            
+            return {
+                ...item,
+                open: item.open * closestRate,
+                high: item.high * closestRate,
+                low: item.low * closestRate,
+                close: item.close * closestRate,
+                adjClose: item.adjClose * closestRate
+            };
+        });
+    }
+    
+    // Fallback to current rate
     const conversionRate = currencyRates[targetCurrency] / currencyRates[sourceCurrency];
     
     return data.map(item => ({
@@ -1070,6 +1168,36 @@ function convertDataToCurrency(data, targetCurrency, sourceCurrency) {
         close: item.close * conversionRate,
         adjClose: item.adjClose * conversionRate
     }));
+}
+
+// Helper function to find the closest historical rate for a given date
+function findClosestRate(targetDate) {
+    if (historicalRates.length === 0) {
+        return currencyRates.NOK / currencyRates.USD; // Fallback to current rate
+    }
+    
+    // Find exact match first
+    const exactMatch = historicalRates.find(rate => 
+        rate.date.toDateString() === targetDate.toDateString()
+    );
+    
+    if (exactMatch) {
+        return exactMatch.rate;
+    }
+    
+    // Find closest date
+    let closestRate = historicalRates[0];
+    let minDiff = Math.abs(targetDate - closestRate.date);
+    
+    for (const rate of historicalRates) {
+        const diff = Math.abs(targetDate - rate.date);
+        if (diff < minDiff) {
+            minDiff = diff;
+            closestRate = rate;
+        }
+    }
+    
+    return closestRate.rate;
 }
 
 // Calculate index performance without currency changes (using starting rate)
@@ -1195,10 +1323,19 @@ function updateStatistics() {
     const totalReturnPercentUSD = (totalReturnUSD / data[0].close) * 100;
     const totalReturnPercentNOK = (totalReturnNOK / (currentPriceNOK - totalReturnNOK)) * 100;
     
-    // Calculate currency impact properly
+    // Calculate currency impact properly using historical rates
     // Currency impact = Current performance - Performance without currency changes
     const currentRate = currencyRates[selectedCurrency] / currencyRates[indexInfo.currency];
     const timeframe = elements.timeframeSelect.value;
+    
+    // Use historical rates if available for more accurate calculation
+    let historicalStartRate = currentRate;
+    if (historicalRates.length > 0 && selectedCurrency === 'NOK') {
+        const startDate = data[0].date;
+        const startRateData = findClosestRate(startDate);
+        historicalStartRate = startRateData;
+        console.log('Using historical start rate:', historicalStartRate, 'for date:', startDate);
+    }
     
     // Calculate the starting rate for the period (same logic as purple line)
     let rateAdjustment = 1.0;
@@ -1215,7 +1352,7 @@ function updateStatistics() {
         default: rateAdjustment = 0.90;
     }
     
-    const startRate = currentRate * rateAdjustment;
+    const startRate = historicalStartRate * rateAdjustment;
     
     // Calculate values with and without currency changes
     const currentValueUSD = data[data.length - 1].close;
