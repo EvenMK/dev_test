@@ -608,8 +608,13 @@ async function loadFinancialData() {
         const timeframe = elements.timeframeSelect.value;
         const indexInfo = indexConfig[symbol];
         
-        // Use a reliable CORS proxy
-        const baseUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=${timeframe}&includePrePost=true&events=div%2Csplit`;
+        // Use Yahoo Finance API with proper parameters for accurate data
+        // For 1-day, use 5d range to ensure we get today's data
+        const effectiveTimeframe = timeframe === '1d' ? '5d' : timeframe;
+        const baseUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=${effectiveTimeframe}&includePrePost=false&events=div%2Csplit`;
+        
+        console.log('Fetching data for symbol:', symbol, 'timeframe:', timeframe, 'effective timeframe:', effectiveTimeframe);
+        console.log('API URL:', baseUrl);
         
         // Try multiple approaches
         let data = null;
@@ -650,6 +655,17 @@ async function loadFinancialData() {
         // Process successful data
         currentData = processFinancialData(data.chart.result[0]);
         
+        // For 1-day timeframe, ensure we have the most recent data
+        if (timeframe === '1d' && currentData && currentData.data.length > 0) {
+            // Get the most recent data point (should be today or latest available)
+            const latestData = currentData.data[currentData.data.length - 1];
+            console.log('Latest 1-day data point:', {
+                date: latestData.date.toISOString(),
+                close: latestData.close,
+                isToday: latestData.date.toDateString() === new Date().toDateString()
+            });
+        }
+        
         // Ensure currency rates are loaded before rendering chart
         if (Object.keys(currencyRates).length === 0) {
             console.log('Currency rates not loaded yet, loading them first...');
@@ -668,6 +684,18 @@ async function loadFinancialData() {
         if (Object.keys(currencyRates).length > 0) {
             console.log('Currency rates confirmed loaded:', Object.keys(currencyRates));
             console.log('Historical rates loaded:', historicalRates.length, 'days');
+            
+            // Validate the data quality
+            if (currentData && currentData.data.length > 0) {
+                const latestPrice = currentData.data[currentData.data.length - 1].close;
+                console.log(`Latest ${symbol} price: $${latestPrice.toFixed(2)}`);
+                
+                // Validate S&P 500 price range (should be reasonable)
+                if (symbol === '^GSPC' && (latestPrice < 1000 || latestPrice > 10000)) {
+                    console.warn('S&P 500 price seems unusual:', latestPrice);
+                }
+            }
+            
             renderChart();
             updateStatistics();
             updatePerformanceTable();
@@ -910,19 +938,49 @@ function showPriceChangeNotification(symbol, newPrice) {
 }
 
 function processFinancialData(result) {
+    console.log('Processing financial data for:', result.meta.symbol);
+    console.log('Raw data structure:', {
+        timestamps: result.timestamp?.length || 0,
+        quotes: result.indicators.quote?.[0] ? 'available' : 'missing',
+        adjClose: result.indicators.adjclose?.[0] ? 'available' : 'missing'
+    });
+    
     const timestamps = result.timestamp;
     const quotes = result.indicators.quote[0];
     const adjClose = result.indicators.adjclose[0].adjclose;
     
-    const data = timestamps.map((timestamp, index) => ({
-        date: new Date(timestamp * 1000),
-        open: quotes.open[index],
-        high: quotes.high[index],
-        low: quotes.low[index],
-        close: quotes.close[index],
-        volume: quotes.volume[index],
-        adjClose: adjClose[index]
-    })).filter(item => item.close !== null && item.close !== undefined);
+    // Process data with proper date indexing and closing prices
+    const data = timestamps.map((timestamp, index) => {
+        const date = new Date(timestamp * 1000);
+        const closePrice = quotes.close[index];
+        const adjClosePrice = adjClose[index];
+        
+        // Use adjusted close price if available, otherwise use regular close
+        const finalClose = adjClosePrice !== null && adjClosePrice !== undefined ? adjClosePrice : closePrice;
+        
+        return {
+            date: date,
+            open: quotes.open[index],
+            high: quotes.high[index],
+            low: quotes.low[index],
+            close: finalClose, // Use adjusted close for accuracy
+            volume: quotes.volume[index],
+            adjClose: adjClosePrice
+        };
+    }).filter(item => {
+        // Filter out any data points with null/undefined closing prices
+        return item.close !== null && item.close !== undefined && !isNaN(item.close);
+    });
+    
+    // Sort by date to ensure proper chronological order
+    data.sort((a, b) => a.date - b.date);
+    
+    console.log('Processed data points:', data.length);
+    console.log('Date range:', data[0]?.date?.toISOString(), 'to', data[data.length - 1]?.date?.toISOString());
+    console.log('Sample closing prices:', data.slice(-3).map(item => ({
+        date: item.date.toISOString().split('T')[0],
+        close: item.close
+    })));
     
     return {
         symbol: result.meta.symbol,
