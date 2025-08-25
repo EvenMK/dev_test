@@ -286,7 +286,7 @@ body {
 .chart-container {
     position: relative;
     width: 100%;
-    height: 2000px;
+    height: 1600px;
 }
 
 #mainChart {
@@ -294,9 +294,9 @@ body {
     height: 100% !important;
 }
 
-/* Exchange Rate Chart - Smaller size */
+/* Exchange Rate Chart - Original size */
 .chart-section:nth-child(3) .chart-container {
-    height: 200px;
+    height: 250px;
 }
 
 #exchangeChart {
