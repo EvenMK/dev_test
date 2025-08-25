@@ -1,0 +1,42 @@
+{
+  "name": "global-financial-dashboard",
+  "version": "1.0.0",
+  "description": "A comprehensive financial dashboard for global market indices with currency conversion and impact analysis",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx live-server --port=8000",
+    "build": "echo 'No build step required - static files only'",
+    "deploy": "echo 'Deploy to GitHub Pages by pushing to main branch'"
+  },
+  "keywords": [
+    "financial",
+    "dashboard",
+    "stocks",
+    "indices",
+    "currency",
+    "trading",
+    "markets",
+    "charts",
+    "yahoo-finance",
+    "github-pages"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/global-financial-dashboard.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/global-financial-dashboard/issues"
+  },
+  "homepage": "https://yourusername.github.io/global-financial-dashboard",
+  "devDependencies": {
+    "serve": "^14.2.0",
+    "live-server": "^1.2.2"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
+
