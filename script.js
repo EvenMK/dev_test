@@ -444,13 +444,22 @@ async function loadHistoricalExchangeRates(startDate, endDate) {
         
         console.log('Fetching from Norges Bank API:', apiUrl);
         
+        // Add timeout to prevent long buffering
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
         // Try with CORS proxy first
         const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`;
-        let response = await fetch(proxyUrl);
+        let response = await fetch(proxyUrl, { signal: controller.signal });
+        
+        clearTimeout(timeoutId);
         
         if (!response.ok) {
             console.log('Proxy failed, trying direct API...');
-            response = await fetch(apiUrl);
+            const directController = new AbortController();
+            const directTimeoutId = setTimeout(() => directController.abort(), 8000); // 8 second timeout
+            response = await fetch(apiUrl, { signal: directController.signal });
+            clearTimeout(directTimeoutId);
         }
         
         if (response.ok) {
@@ -1251,20 +1260,34 @@ function renderExchangeChart() {
     // Check if we have historical rates
     if (!historicalRates || historicalRates.length === 0) {
         console.log('No historical rates available for exchange chart');
+        // Show loading message
+        const loadingDiv = document.createElement('div');
+        loadingDiv.textContent = 'Loading exchange rates...';
+        loadingDiv.style.textAlign = 'center';
+        loadingDiv.style.padding = '20px';
+        loadingDiv.style.color = isDarkMode ? '#ffffff' : '#212529';
+        elements.exchangeChart.appendChild(loadingDiv);
         return;
     }
     
+    // Limit data points for better performance (max 100 points)
+    const maxPoints = 100;
+    const step = Math.max(1, Math.floor(historicalRates.length / maxPoints));
+    const sampledRates = historicalRates.filter((_, index) => index % step === 0);
+    
+    console.log(`Exchange chart: Using ${sampledRates.length} points from ${historicalRates.length} total rates`);
+    
     // Prepare data for the exchange rate chart
     const chartData = {
-        labels: historicalRates.map(rate => rate.date),
+        labels: sampledRates.map(rate => rate.date),
         datasets: [{
             label: 'USD/NOK Exchange Rate',
-            data: historicalRates.map(rate => rate.rate),
+            data: sampledRates.map(rate => rate.rate),
             borderColor: '#f59e0b',
             backgroundColor: 'rgba(245, 158, 11, 0.1)',
             borderWidth: 2,
-            fill: true,
-            tension: 0.05,
+            fill: false, // Disable fill for better performance
+            tension: 0, // Disable tension for better performance
             pointRadius: 0,
             pointHoverRadius: 2,
             pointHoverBackgroundColor: '#f59e0b',
