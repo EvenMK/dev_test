@@ -2176,9 +2176,13 @@ function updateLiveIndicator(isLive) {
 // Update chart header
 function updateChartHeader(symbol) {
     const chartTitle = document.getElementById('chart-title');
+    const dataSource = document.getElementById('data-source');
     const indexInfo = indexConfig[symbol];
     if (chartTitle && indexInfo) {
         chartTitle.textContent = `${indexInfo.name} Performance & Currency Impact`;
+    }
+    if (dataSource) {
+        dataSource.textContent = 'Sources: Yahoo Finance & Norges Bank';
     }
 }
 
