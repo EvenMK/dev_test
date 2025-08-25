@@ -773,21 +773,12 @@ function renderMainChart() {
     let currencyImpactData = [];
     if (Object.keys(currencyRates).length > 0) {
         currencyImpactData = calculateCurrencyImpactOverTime(currentData.data, selectedCurrency, indexInfo.currency);
-        console.log('Currency rates:', currencyRates); // Debug currency rates
-        console.log('Currency impact data:', currencyImpactData.slice(0, 5)); // Debug first 5 values
-    } else {
-        console.log('No currency rates available yet');
     }
     
     // Calculate index performance without currency changes (using starting rate)
     let indexWithoutCurrencyChangesData = [];
     if (Object.keys(currencyRates).length > 0) {
         indexWithoutCurrencyChangesData = calculateIndexWithoutCurrencyChanges(currentData.data, selectedCurrency, indexInfo.currency);
-        console.log('Index without currency changes data:', indexWithoutCurrencyChangesData.slice(0, 5)); // Debug first 5 values
-        console.log('Currency rates available:', Object.keys(currencyRates));
-        console.log('Selected currency:', selectedCurrency, 'Index currency:', indexInfo.currency);
-    } else {
-        console.log('No currency rates available for index without currency changes');
     }
     
     const datasets = [
@@ -829,8 +820,6 @@ function renderMainChart() {
 
     // Add index performance line without currency changes
     if (indexWithoutCurrencyChangesData.length > 0) {
-        console.log('Adding third line with data length:', indexWithoutCurrencyChangesData.length);
-        console.log('Third line data sample:', indexWithoutCurrencyChangesData.slice(0, 3));
         datasets.push({
             label: `${indexInfo.name} (No Currency Changes)`,
             data: indexWithoutCurrencyChangesData.map(item => item.value),
@@ -846,10 +835,6 @@ function renderMainChart() {
             pointHoverBorderWidth: 2,
             yAxisID: 'y'
         });
-    } else {
-        console.log('No data for third line - currency rates available:', Object.keys(currencyRates).length > 0);
-        console.log('Currency rates:', currencyRates);
-        console.log('Selected currency:', selectedCurrency, 'Index currency:', indexInfo.currency);
     }
     
     const chartData = {
@@ -887,34 +872,30 @@ function renderMainChart() {
                     borderWidth: 1,
                     cornerRadius: 8,
                     displayColors: false,
-                                            callbacks: {
-                            title: function(context) {
-                                return new Date(context[0].parsed.x).toLocaleDateString();
-                            },
-                            label: function(context) {
-                                const dataIndex = context[0].dataIndex;
-                                const date = new Date(context[0].parsed.x);
-                                
-                                // Get exchange rate for this specific day
-                                let exchangeRate = '';
-                                if (Object.keys(currencyRates).length > 0 && selectedCurrency !== indexInfo.currency) {
-                                    // For now, we'll use the current rate since we don't have historical rates
-                                    // In a real implementation, you'd fetch historical exchange rates
-                                    const currentRate = currencyRates[selectedCurrency] / currencyRates[indexInfo.currency];
-                                    exchangeRate = ` (Rate: ${currentRate.toFixed(4)} ${selectedCurrency}/${indexInfo.currency})`;
-                                }
-                                
-                                if (context.datasetIndex === 0) {
-                                    return `${context.dataset.label}: ${formatCurrency(context.parsed.y, selectedCurrency)}${exchangeRate}`;
-                                } else if (context.datasetIndex === 1) {
-                                    return `${context.dataset.label}: ${formatCurrency(context.parsed.y, selectedCurrency)}`;
-                                } else {
-                                    // Third line - show that it uses fixed starting rate
-                                    const startRate = currencyRates[selectedCurrency] / currencyRates[indexInfo.currency];
-                                    return `${context.dataset.label}: ${formatCurrency(context.parsed.y, selectedCurrency)} (Starting Rate: ${startRate.toFixed(4)} ${selectedCurrency}/${indexInfo.currency})`;
-                                }
+                    callbacks: {
+                        title: function(context) {
+                            return new Date(context[0].parsed.x).toLocaleDateString();
+                        },
+                        label: function(context) {
+                            // Pre-calculate exchange rates to avoid lag
+                            const currentRate = Object.keys(currencyRates).length > 0 ? 
+                                currencyRates[selectedCurrency] / currencyRates[indexInfo.currency] : 1;
+                            const startRate = Object.keys(currencyRates).length > 0 ? 
+                                currencyRates[selectedCurrency] / currencyRates[indexInfo.currency] : 1;
+                            
+                            if (context.datasetIndex === 0) {
+                                const rateInfo = selectedCurrency !== indexInfo.currency ? 
+                                    ` (Rate: ${currentRate.toFixed(4)} ${selectedCurrency}/${indexInfo.currency})` : '';
+                                return `${context.dataset.label}: ${formatCurrency(context.parsed.y, selectedCurrency)}${rateInfo}`;
+                            } else if (context.datasetIndex === 1) {
+                                return `${context.dataset.label}: ${formatCurrency(context.parsed.y, selectedCurrency)}`;
+                            } else {
+                                const rateInfo = selectedCurrency !== indexInfo.currency ? 
+                                    ` (Starting Rate: ${startRate.toFixed(4)} ${selectedCurrency}/${indexInfo.currency})` : '';
+                                return `${context.dataset.label}: ${formatCurrency(context.parsed.y, selectedCurrency)}${rateInfo}`;
                             }
                         }
+                    }
                 }
             },
             scales: {
@@ -953,12 +934,6 @@ function renderMainChart() {
     };
     
     mainChart = new Chart(ctx, config);
-    
-    console.log('Chart datasets:', mainChart.data.datasets.length); // Debug number of datasets
-    console.log('Chart labels:', mainChart.data.labels.length); // Debug number of labels
-    console.log('Currency rates loaded:', Object.keys(currencyRates).length > 0);
-    console.log('Available currencies:', Object.keys(currencyRates));
-    console.log('Dataset labels:', mainChart.data.datasets.map(ds => ds.label)); // Debug dataset labels
     
     // Update chart theme
     updateChartTheme();
@@ -1042,26 +1017,19 @@ function convertDataToCurrency(data, targetCurrency, sourceCurrency) {
 
 // Calculate index performance without currency changes (using starting rate)
 function calculateIndexWithoutCurrencyChanges(data, targetCurrency, sourceCurrency) {
-    console.log('calculateIndexWithoutCurrencyChanges called with:', { targetCurrency, sourceCurrency, dataLength: data.length });
-    console.log('Available currency rates:', Object.keys(currencyRates));
-    
     // Check if we have the required currency rates
     if (!currencyRates[targetCurrency] || !currencyRates[sourceCurrency]) {
-        console.error('Missing currency rates for calculation:', { targetCurrency, sourceCurrency, availableRates: Object.keys(currencyRates) });
         return [];
     }
     
     // Get the starting exchange rate for the period
     const startRate = currencyRates[targetCurrency] / currencyRates[sourceCurrency];
-    console.log('Starting exchange rate:', startRate, 'for', targetCurrency, '/', sourceCurrency);
     
     const result = data.map(item => ({
         date: item.date,
         value: item.close * startRate // Use starting rate for all data points
     }));
     
-    console.log('Third line data calculated, first few values:', result.slice(0, 3));
-    console.log('Third line data length:', result.length);
     return result;
 }
 
