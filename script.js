@@ -782,36 +782,6 @@ async function loadFinancialData() {
     }
 }
 
-// Alternative data source using Alpha Vantage (free tier)
-async function tryAlternativeDataSource() {
-    try {
-        const symbol = elements.indexSelect.value;
-        const timeframe = elements.timeframeSelect.value;
-        
-        // Use Alpha Vantage API as backup (requires free API key)
-        const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&outputsize=full&apikey=demo`;
-        
-        const response = await fetch(url);
-        const data = await response.json();
-        
-        if (data['Time Series (Daily)']) {
-            currentData = processAlphaVantageData(data, symbol);
-            renderChart();
-            updateStatistics();
-            updatePerformanceTable();
-            
-            // Log attribution
-            console.log('Alternative data loaded from Alpha Vantage API');
-            console.log('Attribution: Alpha Vantage API provided by alphavantage.co');
-        }
-    } catch (error) {
-        console.error('Alternative data source also failed:', error);
-        
-        // Load demo data as final fallback
-        loadDemoData();
-    }
-}
-
 // Real data only - no demo fallback
 function ensureRealData() {
     console.log('Ensuring real data is loaded...');
@@ -820,32 +790,6 @@ function ensureRealData() {
     if (!currentData || !currentData.data || currentData.data.length === 0) {
         loadFinancialData();
     }
-}
-
-// Process Alpha Vantage data
-function processAlphaVantageData(data, symbol) {
-    const timeSeries = data['Time Series (Daily)'];
-    const dates = Object.keys(timeSeries).sort();
-    
-    const processedData = dates.map(date => {
-        const dayData = timeSeries[date];
-        return {
-            date: new Date(date),
-            open: parseFloat(dayData['1. open']),
-            high: parseFloat(dayData['2. high']),
-            low: parseFloat(dayData['3. low']),
-            close: parseFloat(dayData['4. close']),
-            volume: parseInt(dayData['5. volume']),
-            adjClose: parseFloat(dayData['4. close']) // Alpha Vantage doesn't provide adjusted close
-        };
-    });
-    
-    return {
-        symbol: symbol,
-        currency: indexConfig[symbol]?.currency || 'USD',
-        data: processedData,
-        meta: { symbol: symbol }
-    };
 }
 
 // Enhanced live updates for current market data with faster loading
