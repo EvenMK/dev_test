@@ -45,13 +45,14 @@
             <div class="controls-grid">
                 <div class="control-group">
                     <label for="index-select">Index</label>
-                    <select id="index-select" class="select-control">
+                    <select id="index-select" class="select-control" aria-describedby="index-description">
                         <option value="^GSPC">S&amp;P 500 (1957)</option>
                         <option value="^IXIC">NASDAQ Composite (1971)</option>
                         <option value="^DJI">Dow Jones Industrial Average (1896)</option>
                         <option value="^RUT">Russell 2000 (1984)</option>
                         <option value="^VIX">VIX Volatility Index (1990)</option>
                     </select>
+                    <div id="index-description" class="sr-only">Select the financial index to display performance data</div>
                 </div>
                 <div class="control-group">
                     <label for="currency-select">Currency</label>
@@ -87,9 +88,9 @@
                 </div>
             </div>
             <div class="chart-container">
-                <div id="mainChart"></div>
-                <div id="chart-loading" class="loading-overlay">
-                    <div class="loading-spinner"></div>
+                <div id="mainChart" role="img" aria-label="Financial performance chart showing index data with currency impact analysis"></div>
+                <div id="chart-loading" class="loading-overlay" aria-live="polite">
+                    <div class="loading-spinner" aria-hidden="true"></div>
                     <p>Loading financial data...</p>
                 </div>
             </div>
@@ -103,7 +104,7 @@
                         <i class="fas fa-dollar-sign"></i>
                         <span>Current Price</span>
                     </div>
-                    <div class="stat-value" id="current-price">--</div>
+                    <div class="stat-value dual-currency" id="current-price">--</div>
                     <div class="stat-change" id="price-change">--</div>
                 </div>
                 <div class="stat-card">
@@ -111,16 +112,16 @@
                         <i class="fas fa-percentage"></i>
                         <span>Total Return</span>
                     </div>
-                    <div class="stat-value" id="total-return">--</div>
-                    <div class="stat-change" id="return-change">--</div>
+                    <div class="stat-value dual-currency" id="total-return">--</div>
+                    <div class="stat-change dual-currency" id="return-change">--</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-header">
                         <i class="fas fa-exchange-alt"></i>
                         <span>Currency Impact</span>
                     </div>
-                    <div class="stat-value" id="currency-impact">--</div>
-                    <div class="stat-change" id="currency-change">--</div>
+                    <div class="stat-value dual-currency" id="currency-impact">--</div>
+                    <div class="stat-change dual-currency" id="currency-change">--</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-header">
