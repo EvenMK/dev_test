@@ -377,17 +377,17 @@ function setCachedData(key, data) {
 
 
 
-// Historical exchange rates management
+// Historical exchange rates management using Norges Bank API
 async function loadHistoricalExchangeRates(startDate, endDate) {
-    console.log('Loading historical exchange rates from', startDate, 'to', endDate);
+    console.log('Loading historical exchange rates from Norges Bank:', startDate, 'to', endDate);
     
     try {
-        // Use Frankfurter API for historical rates
+        // Use Norges Bank API for official USD/NOK closing rates
         const startDateStr = startDate.toISOString().split('T')[0];
         const endDateStr = endDate.toISOString().split('T')[0];
-        const apiUrl = `https://api.frankfurter.app/${startDateStr}..${endDateStr}?from=USD&to=NOK`;
+        const apiUrl = `https://data.norges-bank.no/api/data/EXR/B.USD.NOK.SP?format=sdmx-json&startPeriod=${startDateStr}&endPeriod=${endDateStr}`;
         
-        console.log('Fetching from API:', apiUrl);
+        console.log('Fetching from Norges Bank API:', apiUrl);
         
         // Try with CORS proxy first
         const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`;
@@ -400,40 +400,83 @@ async function loadHistoricalExchangeRates(startDate, endDate) {
         
         if (response.ok) {
             const data = await response.json();
-            console.log('Historical exchange rates loaded:', data);
+            console.log('Norges Bank exchange rates loaded successfully');
             
-            if (data.rates) {
+            if (data.data && data.data.dataSets && data.data.dataSets[0] && data.data.dataSets[0].series) {
+                const series = data.data.dataSets[0].series['0:0:0:0'];
+                const observations = series.observations;
+                const timeValues = data.data.structure.dimensions.observation[0].values;
+                
                 // Convert to array of daily rates
                 const dailyRates = [];
-                for (const date in data.rates) {
+                for (let i = 0; i < Object.keys(observations).length; i++) {
+                    const dateStr = timeValues[i].id;
+                    const rate = parseFloat(observations[i.toString()][0]);
+                    
                     dailyRates.push({
-                        date: new Date(date),
-                        rate: data.rates[date].NOK
+                        date: new Date(dateStr),
+                        rate: rate
                     });
                 }
                 
                 // Sort by date
                 dailyRates.sort((a, b) => a.date - b.date);
-                console.log('Processed daily rates:', dailyRates.length, 'days');
-                console.log('Sample rates:', dailyRates.slice(0, 3));
+                console.log('Processed Norges Bank daily rates:', dailyRates.length, 'days');
+                console.log('Sample Norges Bank rates:', dailyRates.slice(0, 3));
                 return dailyRates;
             }
         }
         
-        throw new Error('Failed to load historical rates');
+        throw new Error('Failed to load Norges Bank historical rates');
     } catch (error) {
-        console.error('Error loading historical exchange rates:', error);
+        console.error('Error loading Norges Bank historical exchange rates:', error);
+        console.log('Falling back to Frankfurter API...');
         
-        // Fallback: generate synthetic historical rates with realistic values
+        // Fallback to Frankfurter API
+        try {
+            const startDateStr = startDate.toISOString().split('T')[0];
+            const endDateStr = endDate.toISOString().split('T')[0];
+            const frankfurterUrl = `https://api.frankfurter.app/${startDateStr}..${endDateStr}?from=USD&to=NOK`;
+            
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(frankfurterUrl)}`;
+            let response = await fetch(proxyUrl);
+            
+            if (!response.ok) {
+                response = await fetch(frankfurterUrl);
+            }
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Frankfurter fallback rates loaded');
+                
+                if (data.rates) {
+                    const dailyRates = [];
+                    for (const date in data.rates) {
+                        dailyRates.push({
+                            date: new Date(date),
+                            rate: data.rates[date].NOK
+                        });
+                    }
+                    
+                    dailyRates.sort((a, b) => a.date - b.date);
+                    console.log('Processed Frankfurter daily rates:', dailyRates.length, 'days');
+                    return dailyRates;
+                }
+            }
+        } catch (frankfurterError) {
+            console.error('Frankfurter fallback also failed:', frankfurterError);
+        }
+        
+        // Final fallback: generate synthetic historical rates with realistic values
         const dailyRates = [];
         const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-        const baseRate = 11.2; // More realistic base USD/NOK rate
+        const baseRate = 11.2; // Realistic base USD/NOK rate
         
         for (let i = 0; i <= daysDiff; i++) {
             const date = new Date(startDate);
             date.setDate(date.getDate() + i);
             
-            // Add some realistic variation to the rate (USD/NOK typically between 10-12)
+            // Add realistic variation (USD/NOK typically between 10-12)
             const variation = Math.sin(i * 0.01) * 0.8 + Math.random() * 0.4;
             const rate = baseRate + variation;
             
@@ -465,7 +508,43 @@ async function loadCurrencyRates() {
     }
     
     try {
-        // Use the most reliable currency API (Frankfurter)
+        // Use Norges Bank API for current USD/NOK rate (official source)
+        const today = new Date().toISOString().split('T')[0];
+        const norgesBankUrl = `https://data.norges-bank.no/api/data/EXR/B.USD.NOK.SP?format=sdmx-json&startPeriod=${today}&endPeriod=${today}`;
+        
+        console.log('Fetching current USD/NOK rate from Norges Bank...');
+        
+        // Try with CORS proxy first
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(norgesBankUrl)}`;
+        let response = await fetch(proxyUrl);
+        
+        if (!response.ok) {
+            response = await fetch(norgesBankUrl);
+        }
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            if (data.data && data.data.dataSets && data.data.dataSets[0] && data.data.dataSets[0].series) {
+                const series = data.data.dataSets[0].series['0:0:0:0'];
+                const observations = series.observations;
+                
+                if (Object.keys(observations).length > 0) {
+                    const currentRate = parseFloat(observations['0'][0]);
+                    currencyRates = {
+                        USD: 1,
+                        NOK: currentRate
+                    };
+                    setCachedData('currencyRates', currencyRates);
+                    console.log('Current USD/NOK rate from Norges Bank:', currentRate);
+                    console.log('Available currencies:', Object.keys(currencyRates));
+                    return;
+                }
+            }
+        }
+        
+        // Fallback to Frankfurter API
+        console.log('Norges Bank failed, falling back to Frankfurter...');
         const apis = [
             'https://api.frankfurter.app/latest?from=USD'
         ];
