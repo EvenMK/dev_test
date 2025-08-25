@@ -1024,12 +1024,25 @@ function renderMainChart() {
     const indexSymbol = elements.indexSelect.value;
     const indexInfo = indexConfig[indexSymbol];
     
+    // Get the starting exchange rate for both lines to ensure they start at the same level
+    let startRate = null;
+    if (historicalRates && historicalRates.length > 0 && selectedCurrency === 'NOK' && indexInfo.currency === 'USD') {
+        const startDate = currentData.data[0].date;
+        const startRateData = historicalRates.find(rate => 
+            rate.date.toDateString() === startDate.toDateString()
+        );
+        if (startRateData) {
+            startRate = startRateData.rate;
+            console.log('Using start rate for both lines:', startRate, 'for date:', startDate.toDateString());
+        }
+    }
+    
     // Convert data to selected currency
     console.log('Before conversion - Sample data:', currentData.data.slice(0, 3).map(item => ({ date: item.date, close: item.close })));
     console.log('Selected currency:', selectedCurrency, 'Index currency:', indexInfo.currency);
     console.log('Historical rates available:', historicalRates.length);
     
-    const convertedData = convertDataToCurrency(currentData.data, selectedCurrency, indexInfo.currency);
+    const convertedData = convertDataToCurrency(currentData.data, selectedCurrency, indexInfo.currency, startRate);
     
     console.log('After conversion - Sample data:', convertedData.slice(0, 3).map(item => ({ date: item.date, close: item.close })));
     
@@ -1438,7 +1451,7 @@ function calculateCurrencyImpactOverTime(data, targetCurrency, sourceCurrency) {
 // Global variable to store historical exchange rates
 let historicalRates = [];
 
-function convertDataToCurrency(data, targetCurrency, sourceCurrency) {
+function convertDataToCurrency(data, targetCurrency, sourceCurrency, startRateOverride = null) {
     if (targetCurrency === sourceCurrency) {
         return data;
     }
@@ -1448,20 +1461,26 @@ function convertDataToCurrency(data, targetCurrency, sourceCurrency) {
         console.log('Converting USD to NOK using historical rates. Historical rates count:', historicalRates.length);
         console.log('Sample historical rates:', historicalRates.slice(0, 3));
         
-        return data.map(item => {
-            // Find the closest historical rate for this date
-            const itemDate = new Date(item.date);
-            const closestRate = findClosestRate(itemDate);
-            
-            console.log(`Converting ${item.date}: USD ${item.close} * ${closestRate} = NOK ${item.close * closestRate}`);
+        return data.map((item, index) => {
+            // For the first day, use the start rate override if provided
+            let rate;
+            if (index === 0 && startRateOverride) {
+                rate = startRateOverride;
+                console.log(`First day using start rate: USD ${item.close} * ${rate} = NOK ${item.close * rate}`);
+            } else {
+                // Find the closest historical rate for this date
+                const itemDate = new Date(item.date);
+                rate = findClosestRate(itemDate);
+                console.log(`Converting ${item.date}: USD ${item.close} * ${rate} = NOK ${item.close * rate}`);
+            }
             
             return {
                 ...item,
-                open: item.open * closestRate,
-                high: item.high * closestRate,
-                low: item.low * closestRate,
-                close: item.close * closestRate,
-                adjClose: item.adjClose * closestRate
+                open: item.open * rate,
+                high: item.high * rate,
+                low: item.low * rate,
+                close: item.close * rate,
+                adjClose: item.adjClose * rate
             };
         });
     }
