@@ -1097,6 +1097,35 @@ function processFinancialData(result) {
     };
 }
 
+// Helper functions for time formatting
+function getTimeUnit(timeframe) {
+    // For timeframes over 3 months, show months instead of days
+    if (timeframe === '6mo' || timeframe === 'ytd' || timeframe === '1y' || 
+        timeframe === '2y' || timeframe === '5y' || timeframe === '10y' || 
+        timeframe === '15y' || timeframe === '20y' || timeframe === '25y' || 
+        timeframe === '30y' || timeframe === '35y' || timeframe === '40y' || 
+        timeframe === '45y') {
+        return 'month';
+    }
+    return 'day';
+}
+
+function getTimeDisplayFormats(timeframe) {
+    // For timeframes over 3 months, show month names
+    if (timeframe === '6mo' || timeframe === 'ytd' || timeframe === '1y' || 
+        timeframe === '2y' || timeframe === '5y' || timeframe === '10y' || 
+        timeframe === '15y' || timeframe === '20y' || timeframe === '25y' || 
+        timeframe === '30y' || timeframe === '35y' || timeframe === '40y' || 
+        timeframe === '45y') {
+        return {
+            month: 'MMM yyyy'
+        };
+    }
+    return {
+        day: 'MMM dd'
+    };
+}
+
 // Chart rendering
 function renderChart() {
     // Render main chart with currency impact line
@@ -1122,6 +1151,7 @@ function renderMainChart() {
     const selectedCurrency = elements.currencySelect.value;
     const indexSymbol = elements.indexSelect.value;
     const indexInfo = indexConfig[indexSymbol];
+    const timeframe = getActiveTimeframe();
     
     // Get the starting exchange rate for both lines to ensure they start at the same level
     let startRate = null;
@@ -1311,10 +1341,8 @@ function renderMainChart() {
                 x: {
                     type: 'time',
                     time: {
-                        unit: 'day',
-                        displayFormats: {
-                            day: 'MMM dd'
-                        }
+                        unit: getTimeUnit(timeframe),
+                        displayFormats: getTimeDisplayFormats(timeframe)
                     },
                     grid: {
                         color: isDarkMode ? '#333333' : '#dee2e6'

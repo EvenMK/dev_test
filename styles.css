@@ -286,7 +286,7 @@ body {
 .chart-container {
     position: relative;
     width: 100%;
-    height: 89px;
+    height: 45px;
 }
 
 #mainChart {
@@ -703,7 +703,7 @@ tr:hover {
     }
     
     .chart-container {
-        height: 17px;
+        height: 9px;
     }
     
     .stat-value {
@@ -718,7 +718,7 @@ tr:hover {
     }
     
     .chart-container {
-        height: 14px;
+        height: 7px;
     }
     
     .stat-card {
