@@ -117,7 +117,6 @@ function initializeElements() {
     elements = {
         indexSelect: document.getElementById('index-select'),
         currencySelect: document.getElementById('currency-select'),
-        timeframeSelect: document.getElementById('timeframe-select'),
         mainChart: document.getElementById('mainChart'),
         chartLoading: document.getElementById('chart-loading'),
         themeToggle: document.getElementById('theme-toggle'),
@@ -173,23 +172,6 @@ function setupEventListeners() {
     if (elements.currencySelect) {
         elements.currencySelect.addEventListener('change', loadFinancialData);
     }
-    if (elements.timeframeSelect) {
-        elements.timeframeSelect.addEventListener('change', function() {
-            const timeframe = this.value;
-            
-            // Update button active state
-            const timeframeButtons = document.querySelectorAll('.timeframe-btn');
-            timeframeButtons.forEach(btn => {
-                if (btn.getAttribute('data-timeframe') === timeframe) {
-                    btn.setAttribute('data-active', 'true');
-                } else {
-                    btn.setAttribute('data-active', 'false');
-                }
-            });
-            
-            loadFinancialData();
-        });
-    }
     
     // Timeframe buttons
     const timeframeButtons = document.querySelectorAll('.timeframe-btn');
@@ -201,13 +183,8 @@ function setupEventListeners() {
             timeframeButtons.forEach(btn => btn.setAttribute('data-active', 'false'));
             this.setAttribute('data-active', 'true');
             
-            // Update dropdown to match
-            if (elements.timeframeSelect) {
-                elements.timeframeSelect.value = timeframe;
-            }
-            
             // Load data with new timeframe
-            loadFinancialData();
+            loadFinancialData(timeframe);
         });
     });
     
@@ -464,6 +441,12 @@ function setCachedData(key, data) {
     };
 }
 
+// Get the currently active timeframe from buttons
+function getActiveTimeframe() {
+    const activeButton = document.querySelector('.timeframe-btn[data-active="true"]');
+    return activeButton ? activeButton.getAttribute('data-timeframe') : '1y';
+}
+
 
 
 // Historical exchange rates management using Norges Bank API
@@ -705,12 +688,12 @@ async function loadCurrencyRates() {
 }
 
 // Enhanced financial data loading with live updates
-async function loadFinancialData() {
+async function loadFinancialData(customTimeframe = null) {
     showLoading(true);
     
     try {
         const symbol = elements.indexSelect.value;
-        const timeframe = elements.timeframeSelect.value;
+        const timeframe = customTimeframe || getActiveTimeframe();
         const indexInfo = indexConfig[symbol];
         
         // Use Yahoo Finance API with proper parameters for accurate data
