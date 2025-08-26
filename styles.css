@@ -252,8 +252,8 @@ body {
 
 /* Force main chart to be visible */
 .chart-section:first-of-type .chart-container {
-    height: 300px !important;
-    min-height: 300px !important;
+    height: 450px !important;
+    min-height: 450px !important;
 }
 
 .chart-header {
@@ -292,14 +292,14 @@ body {
 .chart-container {
     position: relative;
     width: 100%;
-    height: 300px !important;
-    min-height: 300px !important;
+    height: 450px !important;
+    min-height: 450px !important;
 }
 
 #mainChart {
     width: 100% !important;
     height: 100% !important;
-    min-height: 300px !important;
+    min-height: 450px !important;
 }
 
 /* Exchange Rate Chart - Increased size */
