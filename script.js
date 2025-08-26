@@ -1531,7 +1531,7 @@ function renderExchangeChart() {
 
 
 
-// Calculate currency impact over time using proper formula
+// Calculate currency impact over time: Purple line minus Green line
 function calculateCurrencyImpactOverTime(data, targetCurrency, sourceCurrency) {
     if (targetCurrency === sourceCurrency) {
         return data.map(item => ({
@@ -1540,37 +1540,20 @@ function calculateCurrencyImpactOverTime(data, targetCurrency, sourceCurrency) {
         }));
     }
     
-    // Use current exchange rate for currency impact calculation
-    const currentRate = currencyRates[targetCurrency] / currencyRates[sourceCurrency];
+    // Get the purple line data (S&P 500 with starting exchange rate)
+    const purpleLineData = calculateIndexWithoutCurrencyChanges(data, targetCurrency, sourceCurrency);
     
+    // Get the green line data (S&P 500 with current exchange rates)
+    const greenLineData = convertDataToCurrency(data, targetCurrency, sourceCurrency);
+    
+    // Calculate currency impact as: Purple line minus Green line
     return data.map((item, index) => {
-        if (index === 0) {
-            return {
-                date: item.date,
-                impact: 0
-            };
-        }
-        
-        // Get previous day's data
-        const prevItem = data[index - 1];
-        
-        // Calculate local return (S&P 500 in USD)
-        const localReturn = (item.close - prevItem.close) / prevItem.close;
-        
-        // For currency impact, we calculate the difference between:
-        // 1. S&P 500 performance with current exchange rate
-        // 2. S&P 500 performance with starting exchange rate
-        
-        // Current value in target currency
-        const currentValueInTarget = item.close * currentRate;
-        const prevValueInTarget = prevItem.close * currentRate;
-        
-        // Calculate daily currency impact as the difference
-        const currencyImpact = (currentValueInTarget - prevValueInTarget) - (item.close - prevItem.close);
+        const purpleValue = purpleLineData[index]?.value || 0;
+        const greenValue = greenLineData[index]?.close || 0;
         
         return {
             date: item.date,
-            impact: currencyImpact
+            impact: purpleValue - greenValue
         };
     });
 }
