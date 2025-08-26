@@ -174,8 +174,42 @@ function setupEventListeners() {
         elements.currencySelect.addEventListener('change', loadFinancialData);
     }
     if (elements.timeframeSelect) {
-        elements.timeframeSelect.addEventListener('change', loadFinancialData);
+        elements.timeframeSelect.addEventListener('change', function() {
+            const timeframe = this.value;
+            
+            // Update button active state
+            const timeframeButtons = document.querySelectorAll('.timeframe-btn');
+            timeframeButtons.forEach(btn => {
+                if (btn.getAttribute('data-timeframe') === timeframe) {
+                    btn.setAttribute('data-active', 'true');
+                } else {
+                    btn.setAttribute('data-active', 'false');
+                }
+            });
+            
+            loadFinancialData();
+        });
     }
+    
+    // Timeframe buttons
+    const timeframeButtons = document.querySelectorAll('.timeframe-btn');
+    timeframeButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const timeframe = this.getAttribute('data-timeframe');
+            
+            // Update active state
+            timeframeButtons.forEach(btn => btn.setAttribute('data-active', 'false'));
+            this.setAttribute('data-active', 'true');
+            
+            // Update dropdown to match
+            if (elements.timeframeSelect) {
+                elements.timeframeSelect.value = timeframe;
+            }
+            
+            // Load data with new timeframe
+            loadFinancialData();
+        });
+    });
     
     // Theme toggle
     if (elements.themeToggle) {
@@ -436,6 +470,13 @@ function setCachedData(key, data) {
 async function loadHistoricalExchangeRates(startDate, endDate) {
     console.log('Loading historical exchange rates from Norges Bank:', startDate, 'to', endDate);
     
+    // Limit start date to 1980-01-01 (Norges Bank data limit)
+    const norgesBankStartDate = new Date('1980-01-01');
+    if (startDate < norgesBankStartDate) {
+        console.log(`Limiting start date from ${startDate.toISOString().split('T')[0]} to 1980-01-01 (Norges Bank data limit)`);
+        startDate = norgesBankStartDate;
+    }
+    
     try {
         // Use Norges Bank API for official USD/NOK closing rates
         const startDateStr = startDate.toISOString().split('T')[0];
@@ -673,8 +714,22 @@ async function loadFinancialData() {
         const indexInfo = indexConfig[symbol];
         
         // Use Yahoo Finance API with proper parameters for accurate data
+        // Map custom timeframes to Yahoo Finance ranges
+        let effectiveTimeframe = timeframe;
+        
+        // Handle custom year ranges (limit to 45 years back from 1980)
+        if (timeframe.endsWith('y') && timeframe !== '1y') {
+            const years = parseInt(timeframe);
+            if (years > 45) {
+                console.log(`Limiting ${years} years to 45 years (Norges Bank data limit)`);
+                effectiveTimeframe = '45y';
+            }
+        }
+        
         // For 1-day, use 5d range to ensure we get today's data
-        const effectiveTimeframe = timeframe === '1d' ? '5d' : timeframe;
+        if (timeframe === '1d') {
+            effectiveTimeframe = '5d';
+        }
         const baseUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=${effectiveTimeframe}&includePrePost=false&events=div%2Csplit`;
         
         console.log('Fetching data for symbol:', symbol, 'timeframe:', timeframe, 'effective timeframe:', effectiveTimeframe);
