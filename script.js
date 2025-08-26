@@ -1348,7 +1348,10 @@ function renderMainChart() {
                         color: isDarkMode ? '#333333' : '#dee2e6'
                     },
                     ticks: {
-                        color: isDarkMode ? '#b0b0b0' : '#6c757d'
+                        color: isDarkMode ? '#b0b0b0' : '#6c757d',
+                        maxTicksLimit: 12,
+                        maxRotation: 0,
+                        minRotation: 0
                     }
                 },
                 y: {
