@@ -247,7 +247,7 @@ body {
     margin: 1.5rem 0;
     box-shadow: var(--shadow);
     position: relative;
-    min-height: 50px;
+    min-height: 400px;
 }
 
 .chart-header {
@@ -294,9 +294,9 @@ body {
     height: 100% !important;
 }
 
-/* Exchange Rate Chart - Increased size */
+/* Exchange Rate Chart - Reduced size */
 .chart-section:nth-child(3) .chart-container {
-    height: 1000px;
+    height: 50px;
 }
 
 /* Timeframe Buttons Section */
