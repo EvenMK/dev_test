@@ -1400,6 +1400,7 @@ function renderExchangeChart() {
     // Check if we have historical rates
     if (!historicalRates || historicalRates.length === 0) {
         console.log('No historical rates available for exchange chart');
+        console.log('Historical rates variable:', historicalRates);
         // Show loading message
         const loadingDiv = document.createElement('div');
         loadingDiv.textContent = 'Loading exchange rates...';
@@ -1487,10 +1488,8 @@ function renderExchangeChart() {
                 x: {
                     type: 'time',
                     time: {
-                        unit: 'day',
-                        displayFormats: {
-                            day: 'MMM dd'
-                        }
+                        unit: getTimeUnit(getActiveTimeframe()),
+                        displayFormats: getTimeDisplayFormats(getActiveTimeframe())
                     },
                     grid: {
                         color: isDarkMode ? '#333333' : '#dee2e6'
@@ -1575,8 +1574,7 @@ function calculateCurrencyImpactOverTime(data, targetCurrency, sourceCurrency) {
 
 
 
-// Global variable to store historical exchange rates
-let historicalRates = [];
+// Global variable to store historical exchange rates (already declared at top)
 
 function convertDataToCurrency(data, targetCurrency, sourceCurrency, startRateOverride = null) {
     if (targetCurrency === sourceCurrency) {
