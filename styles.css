@@ -711,7 +711,7 @@ tr:hover {
     }
     
     .chart-container {
-        height: 200px;
+        height: 250px !important;
     }
     
     .stat-value {
@@ -726,7 +726,7 @@ tr:hover {
     }
     
     .chart-container {
-        height: 1px;
+        height: 150px !important;
     }
     
     .stat-card {
