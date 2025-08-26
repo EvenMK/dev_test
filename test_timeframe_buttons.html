@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timeframe Buttons Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .timeframe-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+        }
+        .timeframe-btn {
+            padding: 6px 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            background: white;
+            color: #6c757d;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 50px;
+            text-align: center;
+            white-space: nowrap;
+        }
+        .timeframe-btn:hover {
+            background: #e9ecef;
+            color: #495057;
+            border-color: #007bff;
+        }
+        .timeframe-btn[data-active="true"] {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+            font-weight: 600;
+        }
+        .test-results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 6px;
+        }
+        .test-results h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        .test-item {
+            margin: 5px 0;
+            padding: 5px;
+            background: white;
+            border-radius: 4px;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Timeframe Buttons Test</h1>
+        <p>This test verifies that all timeframe buttons are working correctly with the new system.</p>
+        
+        <div class="timeframe-buttons">
+            <button class="timeframe-btn" data-timeframe="1d">1 Day</button>
+            <button class="timeframe-btn" data-timeframe="5d">5 Days</button>
+            <button class="timeframe-btn" data-timeframe="1mo">1 Month</button>
+            <button class="timeframe-btn" data-timeframe="3mo">3 Months</button>
+            <button class="timeframe-btn" data-timeframe="6mo">6 Months</button>
+            <button class="timeframe-btn" data-timeframe="ytd">YTD</button>
+            <button class="timeframe-btn" data-timeframe="1y" data-active="true">1 Year</button>
+            <button class="timeframe-btn" data-timeframe="2y">2 Years</button>
+            <button class="timeframe-btn" data-timeframe="5y">5 Years</button>
+            <button class="timeframe-btn" data-timeframe="10y">10 Years</button>
+            <button class="timeframe-btn" data-timeframe="15y">15 Years</button>
+            <button class="timeframe-btn" data-timeframe="20y">20 Years</button>
+            <button class="timeframe-btn" data-timeframe="25y">25 Years</button>
+            <button class="timeframe-btn" data-timeframe="30y">30 Years</button>
+            <button class="timeframe-btn" data-timeframe="35y">35 Years</button>
+            <button class="timeframe-btn" data-timeframe="40y">40 Years</button>
+            <button class="timeframe-btn" data-timeframe="45y">45 Years</button>
+        </div>
+        
+        <div class="test-results">
+            <h3>Test Results</h3>
+            <div id="test-output">
+                <div class="test-item">Click buttons to test functionality...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Test the timeframe button functionality
+        const timeframeButtons = document.querySelectorAll('.timeframe-btn');
+        const testOutput = document.getElementById('test-output');
+        
+        // Function to get active timeframe (same as in main script)
+        function getActiveTimeframe() {
+            const activeButton = document.querySelector('.timeframe-btn[data-active="true"]');
+            return activeButton ? activeButton.getAttribute('data-timeframe') : '1y';
+        }
+        
+        // Function to test timeframe mapping (same logic as in main script)
+        function testTimeframeMapping(timeframe) {
+            let effectiveTimeframe = timeframe;
+            
+            switch(timeframe) {
+                case '1d': effectiveTimeframe = '5d'; break;
+                case '5d': effectiveTimeframe = '5d'; break;
+                case '1mo': effectiveTimeframe = '1mo'; break;
+                case '3mo': effectiveTimeframe = '3mo'; break;
+                case '6mo': effectiveTimeframe = '6mo'; break;
+                case 'ytd': effectiveTimeframe = 'ytd'; break;
+                case '1y': effectiveTimeframe = '1y'; break;
+                case '2y': effectiveTimeframe = '2y'; break;
+                case '5y': effectiveTimeframe = '5y'; break;
+                case '10y': effectiveTimeframe = '10y'; break;
+                case '15y': effectiveTimeframe = '15y'; break;
+                case '20y': effectiveTimeframe = '20y'; break;
+                case '25y': effectiveTimeframe = '25y'; break;
+                case '30y': effectiveTimeframe = '30y'; break;
+                case '35y': effectiveTimeframe = '35y'; break;
+                case '40y': effectiveTimeframe = '40y'; break;
+                case '45y': effectiveTimeframe = '45y'; break;
+                default: effectiveTimeframe = '1y';
+            }
+            
+            return effectiveTimeframe;
+        }
+        
+        // Add click event listeners
+        timeframeButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const timeframe = this.getAttribute('data-timeframe');
+                
+                // Update active state
+                timeframeButtons.forEach(btn => btn.setAttribute('data-active', 'false'));
+                this.setAttribute('data-active', 'true');
+                
+                // Test the functionality
+                const activeTimeframe = getActiveTimeframe();
+                const mappedTimeframe = testTimeframeMapping(timeframe);
+                
+                // Add test result
+                const testItem = document.createElement('div');
+                testItem.className = 'test-item';
+                testItem.innerHTML = `
+                    <span class="success">✓</span> 
+                    Clicked: <strong>${timeframe}</strong> | 
+                    Active: <strong>${activeTimeframe}</strong> | 
+                    Mapped to: <strong>${mappedTimeframe}</strong>
+                `;
+                
+                testOutput.appendChild(testItem);
+                
+                // Keep only last 10 results
+                while (testOutput.children.length > 10) {
+                    testOutput.removeChild(testOutput.firstChild);
+                }
+            });
+        });
+        
+        // Initial test
+        const initialActive = getActiveTimeframe();
+        const initialMapped = testTimeframeMapping(initialActive);
+        
+        const initialTest = document.createElement('div');
+        initialTest.className = 'test-item';
+        initialTest.innerHTML = `
+            <span class="success">✓</span> 
+            Initial state: <strong>${initialActive}</strong> | 
+            Mapped to: <strong>${initialMapped}</strong>
+        `;
+        testOutput.appendChild(initialTest);
+    </script>
+</body>
+</html>

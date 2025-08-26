@@ -270,7 +270,7 @@ function updateChartTitle() {
     const indexSymbol = elements.indexSelect.value;
     const indexInfo = indexConfig[indexSymbol];
     const selectedCurrency = elements.currencySelect.value;
-    const timeframe = elements.timeframeSelect.value;
+    const timeframe = getActiveTimeframe();
     
     // Format timeframe for display
     const timeframeMap = {
@@ -295,7 +295,7 @@ function updateChartTitle() {
 
 // Update exchange chart title dynamically
 function updateExchangeChartTitle() {
-    const timeframe = elements.timeframeSelect.value;
+    const timeframe = getActiveTimeframe();
     
     // Format timeframe for display
     const timeframeMap = {
@@ -304,10 +304,18 @@ function updateExchangeChartTitle() {
         '1mo': '1 Month',
         '3mo': '3 Months',
         '6mo': '6 Months',
+        'ytd': 'Year to Date',
         '1y': '1 Year',
         '2y': '2 Years',
         '5y': '5 Years',
-        'max': 'Max'
+        '10y': '10 Years',
+        '15y': '15 Years',
+        '20y': '20 Years',
+        '25y': '25 Years',
+        '30y': '30 Years',
+        '35y': '35 Years',
+        '40y': '40 Years',
+        '45y': '45 Years'
     };
     
     const timeframeDisplay = timeframeMap[timeframe] || timeframe;
@@ -700,18 +708,71 @@ async function loadFinancialData(customTimeframe = null) {
         // Map custom timeframes to Yahoo Finance ranges
         let effectiveTimeframe = timeframe;
         
-        // Handle custom year ranges (limit to 45 years back from 1980)
+        // Map custom timeframes to Yahoo Finance supported ranges
+        switch(timeframe) {
+            case '1d':
+                effectiveTimeframe = '5d'; // Use 5d to ensure we get today's data
+                break;
+            case '5d':
+                effectiveTimeframe = '5d';
+                break;
+            case '1mo':
+                effectiveTimeframe = '1mo';
+                break;
+            case '3mo':
+                effectiveTimeframe = '3mo';
+                break;
+            case '6mo':
+                effectiveTimeframe = '6mo';
+                break;
+            case '1y':
+                effectiveTimeframe = '1y';
+                break;
+            case '2y':
+                effectiveTimeframe = '2y';
+                break;
+            case '5y':
+                effectiveTimeframe = '5y';
+                break;
+            case '10y':
+                effectiveTimeframe = '10y';
+                break;
+            case '15y':
+                effectiveTimeframe = '15y';
+                break;
+            case '20y':
+                effectiveTimeframe = '20y';
+                break;
+            case '25y':
+                effectiveTimeframe = '25y';
+                break;
+            case '30y':
+                effectiveTimeframe = '30y';
+                break;
+            case '35y':
+                effectiveTimeframe = '35y';
+                break;
+            case '40y':
+                effectiveTimeframe = '40y';
+                break;
+            case '45y':
+                effectiveTimeframe = '45y';
+                break;
+            case 'ytd':
+                effectiveTimeframe = 'ytd';
+                break;
+            default:
+                effectiveTimeframe = '1y'; // Default fallback
+                console.warn(`Unknown timeframe: ${timeframe}, using 1y as fallback`);
+        }
+        
+        // Limit to 45 years maximum (Norges Bank data limit)
         if (timeframe.endsWith('y') && timeframe !== '1y') {
             const years = parseInt(timeframe);
             if (years > 45) {
                 console.log(`Limiting ${years} years to 45 years (Norges Bank data limit)`);
                 effectiveTimeframe = '45y';
             }
-        }
-        
-        // For 1-day, use 5d range to ensure we get today's data
-        if (timeframe === '1d') {
-            effectiveTimeframe = '5d';
         }
         const baseUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=${effectiveTimeframe}&includePrePost=false&events=div%2Csplit`;
         
@@ -2109,7 +2170,7 @@ function exportData() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${currentData.symbol}_${elements.timeframeSelect.value}_${elements.currencySelect.value}_data.csv`;
+        a.download = `${currentData.symbol}_${getActiveTimeframe()}_${elements.currencySelect.value}_data.csv`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
