@@ -1,0 +1,52 @@
+:root {
+	--bg: #0b1220;
+	--card: #111827;
+	--text: #e5e7eb;
+	--muted: #9ca3af;
+	--accent: #3b82f6;
+	--accent-2: #22d3ee;
+	--ring: rgba(59,130,246,0.35);
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+	margin: 0;
+	background: linear-gradient(180deg, #0b1220 0%, #0e1526 100%);
+	color: var(--text);
+	font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+.container { width: min(1200px, 92vw); margin: 0 auto; }
+
+.site-header { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(8px); background: rgba(11,18,32,0.6); border-bottom: 1px solid rgba(255,255,255,0.06); }
+.header-inner { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; }
+.brand { margin: 0; font-size: 20px; letter-spacing: 0.5px; }
+.nav .btn { appearance: none; background: transparent; border: 1px solid rgba(255,255,255,0.12); color: var(--text); padding: 8px 12px; border-radius: 10px; cursor: pointer; margin-left: 6px; }
+.nav .btn:hover { border-color: var(--accent); box-shadow: 0 0 0 4px var(--ring); }
+
+.controls { margin: 18px 0 8px; }
+.controls-form { display: flex; gap: 10px; align-items: center; }
+label { color: var(--muted); font-size: 14px; }
+select { background: var(--card); color: var(--text); border: 1px solid rgba(255,255,255,0.08); padding: 8px 10px; border-radius: 10px; outline: none; }
+select:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--ring); }
+
+.grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; margin: 16px 0 40px; }
+
+.card { grid-column: span 12; background: var(--card); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; overflow: hidden; display: grid; grid-template-columns: 220px 1fr; min-height: 160px; }
+.card .media { background-size: cover; background-position: center; }
+.card .content { padding: 14px 16px; }
+.meta { display: flex; gap: 10px; align-items: center; margin-bottom: 6px; color: var(--muted); font-size: 12px; }
+.badge { background: linear-gradient(90deg, var(--accent), var(--accent-2)); color: #041018; padding: 4px 8px; border-radius: 20px; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+.title { margin: 6px 0 8px; font-size: 18px; }
+.title a { color: var(--text); text-decoration: none; }
+.title a:hover { color: var(--accent-2); }
+.summary { color: #cdd2d8; line-height: 1.5; font-size: 14px; }
+
+@media (max-width: 860px) {
+	.card { grid-template-columns: 1fr; }
+	.card .media { height: 180px; }
+}
+
+.site-footer { border-top: 1px solid rgba(255,255,255,0.06); padding: 24px 0; color: var(--muted); }
+

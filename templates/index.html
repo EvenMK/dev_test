@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block content %}
+	<section class="controls">
+		<form method="get" class="controls-form">
+			<label for="source">Source</label>
+			<select id="source" name="source" onchange="this.form.submit()">
+				<option value="" {% if not active_source %}selected{% endif %}>All sources</option>
+				{% for s in sources %}
+					<option value="{{ s }}" {% if active_source == s %}selected{% endif %}>{{ s }}</option>
+				{% endfor %}
+			</select>
+		</form>
+	</section>
+
+	<section class="grid">
+		{% for a in articles %}
+		<article class="card">
+			{% if a.image %}
+				<div class="media" style="background-image:url('{{ a.image }}');"></div>
+			{% endif %}
+			<div class="content">
+				<div class="meta">
+					<span class="badge">{{ a.source }}</span>
+					{% if a.published %}
+						<time>{{ a.published.strftime('%b %d, %Y %H:%M %Z') }}</time>
+					{% endif %}
+				</div>
+				<h2 class="title"><a href="{{ a.link }}" target="_blank" rel="noreferrer noopener">{{ a.title }}</a></h2>
+				{% if a.summary %}
+					<p class="summary">{{ a.summary|striptags|truncate(220, True, '…') }}</p>
+				{% endif %}
+			</div>
+		</article>
+		{% endfor %}
+	</section>
+{% endblock %}
+

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>{% block title %}Market News Hub{% endblock %}</title>
+	<link id="theme-css" rel="stylesheet" href="{{ url_for('static', filename='css/light.css') }}">
+	<script defer src="{{ url_for('static', filename='js/theme.js') }}"></script>
+</head>
+<body>
+	<header class="site-header">
+		<div class="container header-inner">
+			<h1 class="brand">Market News Hub</h1>
+			<nav class="nav">
+				<div class="theme-switcher">
+					<button class="btn" data-theme="light">Light</button>
+					<button class="btn" data-theme="neon">Neon</button>
+				</div>
+			</nav>
+		</div>
+	</header>
+
+	<main class="container">
+		{% block content %}{% endblock %}
+	</main>
+
+	<footer class="site-footer">
+		<div class="container">
+			<p>&copy; {{ 2025 }} Market News Hub</p>
+		</div>
+	</footer>
+</body>
+</html>
+
