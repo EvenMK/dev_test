@@ -27,15 +27,23 @@ def get_sp500_symbols(force_refresh: bool = False) -> List[str]:
 	):
 		return _symbols_cache["symbols"]
 
-	# Fetch S&P 500 constituents from Wikipedia
+	# 1) Prefer yfinance's built-in list
+	try:
+		symbols = list(yf.tickers_sp500())
+		symbols = [s.strip().upper() for s in symbols if s and isinstance(s, str)]
+		if len(symbols) >= 450:
+			_symbols_cache = {"symbols": symbols, "ts": datetime.utcnow()}
+			return symbols
+	except Exception:
+		pass
+
+	# 2) Fallback: Wikipedia
 	url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
-	# Read tables with pandas; first table contains the listing
 	resp = requests.get(url, timeout=20, headers={"User-Agent": USER_AGENT})
 	resp.raise_for_status()
 	tables = pd.read_html(resp.text)
 	if not tables:
 		raise RuntimeError("Failed to parse S&P 500 table")
-	# Commonly the first table has a 'Symbol' column
 	df = tables[0]
 	symbols = [str(s).strip().upper().replace(".", "-") for s in df["Symbol"].tolist()]
 
