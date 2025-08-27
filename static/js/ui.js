@@ -36,11 +36,16 @@
 			const json = await res.json();
 			const track = qs('#ticker-track');
 			if(!track) return;
+			if(!json.data || json.data.length === 0){
+				track.textContent = 'S&P 500 data unavailable right now';
+				return;
+			}
 			const parts = json.data.map(it => `${it.symbol} ${Number(it.price).toFixed(2)}`);
 			const content = parts.join('   •   ');
 			track.textContent = content + '   •   ' + content; // duplicate for seamless loop
 		} catch (e) {
-			// noop
+			const track = qs('#ticker-track');
+			if(track) track.textContent = 'S&P 500 ticker failed to load';
 		}
 	}
 

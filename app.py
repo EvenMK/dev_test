@@ -3,6 +3,7 @@ from flask import Flask, render_template, request, Response, jsonify
 from flask_caching import Cache
 from feeds import get_articles, SOURCES
 from stocks import get_sp500_prices
+import threading
 
 
 def create_app() -> Flask:
@@ -48,6 +49,17 @@ def create_app() -> Flask:
 	def api_sp500():
 		prices = get_sp500_prices()
 		return jsonify({"count": len(prices), "data": prices})
+
+	# Warm the S&P 500 cache after first request in background to avoid delaying page
+	def _warm_sp500():
+		try:
+			get_sp500_prices()
+		except Exception:
+			pass
+
+	@app.before_first_request
+	def _warmup():
+		threading.Thread(target=_warm_sp500, daemon=True).start()
 
 	return app
 
