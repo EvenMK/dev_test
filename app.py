@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, Response
 from flask_caching import Cache
 from feeds import get_articles, SOURCES
 
@@ -13,6 +13,22 @@ def create_app() -> Flask:
 		CACHE_DEFAULT_TIMEOUT=600,
 	)
 	cache = Cache(app)
+
+	@app.before_request
+	def _require_basic_auth():
+		# Allow static files without auth
+		if request.path.startswith("/static/"):
+			return None
+		username = os.environ.get("BASIC_AUTH_USER")
+		password = os.environ.get("BASIC_AUTH_PASS")
+		# Only enforce if both are set
+		if not (username and password):
+			return None
+		auth = request.authorization
+		if not auth or auth.type.lower() != "basic" or auth.username != username or auth.password != password:
+			resp = Response("Authentication required", 401)
+			resp.headers["WWW-Authenticate"] = 'Basic realm="Market News Hub"'
+			return resp
 
 	@app.route("/")
 	@cache.cached(timeout=600, query_string=True)
