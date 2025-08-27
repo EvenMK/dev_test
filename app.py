@@ -28,7 +28,7 @@ def create_app() -> Flask:
 		auth = request.authorization
 		if not auth or auth.type.lower() != "basic" or auth.username != username or auth.password != password:
 			resp = Response("Authentication required", 401)
-			resp.headers["WWW-Authenticate"] = 'Basic realm="Market News Hub"'
+			resp.headers["WWW-Authenticate"] = 'Basic realm="Even News"'
 			return resp
 
 	@app.route("/")

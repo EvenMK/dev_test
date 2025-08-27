@@ -1,5 +1,5 @@
 
-# Market News Hub
+# Even News
 
 A Flask-powered news aggregator for WSJ, Bloomberg, Financial Times, and The Economist via RSS. Includes two themes: Light and Neon.
 
