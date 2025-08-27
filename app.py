@@ -45,10 +45,13 @@ def create_app() -> Flask:
 		)
 
 	@app.route("/api/sp500")
-	@cache.cached(timeout=300)
 	def api_sp500():
-		prices = get_sp500_prices()
-		return jsonify({"count": len(prices), "data": prices})
+		try:
+			prices = get_sp500_prices()
+			return jsonify({"count": len(prices), "data": prices})
+		except Exception as exc:
+			# Gracefully degrade so UI shows a friendly placeholder
+			return jsonify({"count": 0, "data": [], "error": str(exc)}), 200
 
 	# Warm the S&P 500 cache after first request in background to avoid delaying page
 	def _warm_sp500():

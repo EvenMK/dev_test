@@ -32,7 +32,7 @@
 	async function loadTicker(){
 		try {
 			const res = await fetch('/api/sp500');
-			if(!res.ok) return;
+			if(!res.ok) { const track = qs('#ticker-track'); if(track) track.textContent='S&P 500 data unavailable'; return; }
 			const json = await res.json();
 			const track = qs('#ticker-track');
 			if(!track) return;
