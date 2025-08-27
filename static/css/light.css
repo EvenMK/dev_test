@@ -19,6 +19,10 @@ body {
 
 .container { width: min(1200px, 92vw); margin: 0 auto; }
 
+.ticker { position: sticky; top: 0; z-index: 50; background: rgba(11,18,32,0.9); border-bottom: 1px solid rgba(255,255,255,0.06); overflow: hidden; white-space: nowrap; }
+.ticker-track { display: inline-block; padding: 8px 0; color: var(--accent-2); animation: ticker-move 40s linear infinite; }
+@keyframes ticker-move { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
 .site-header { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(8px); background: rgba(11,18,32,0.6); border-bottom: 1px solid rgba(255,255,255,0.06); }
 .header-inner { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; }
 .brand { margin: 0; font-size: 20px; letter-spacing: 0.5px; }
@@ -42,6 +46,14 @@ select:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--ring); }
 .title a { color: var(--text); text-decoration: none; }
 .title a:hover { color: var(--accent-2); }
 .summary { color: #cdd2d8; line-height: 1.5; font-size: 14px; }
+
+/* Modal */
+.modal.hidden { display: none; }
+.modal { position: fixed; inset: 0; z-index: 100; }
+.modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.55); backdrop-filter: blur(2px); }
+.modal-dialog { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(900px, 92vw); height: min(70vh, 720px); background: var(--card); border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; overflow: hidden; box-shadow: 0 20px 80px rgba(0,0,0,0.55); }
+.modal-close { position: absolute; right: 10px; top: 8px; appearance: none; background: transparent; color: var(--text); font-size: 22px; border: 0; cursor: pointer; }
+#modal-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 
 @media (max-width: 860px) {
 	.card { grid-template-columns: 1fr; }

@@ -15,7 +15,7 @@
 
 	<section class="grid">
 		{% for a in articles %}
-		<article class="card">
+		<article class="card" data-link="{{ a.link }}">
 			{% if a.image %}
 				<div class="media" style="background-image:url('{{ a.image }}');"></div>
 			{% endif %}
@@ -26,7 +26,7 @@
 						<time>{{ a.published.strftime('%b %d, %Y %H:%M %Z') }}</time>
 					{% endif %}
 				</div>
-				<h2 class="title"><a href="{{ a.link }}" target="_blank" rel="noreferrer noopener">{{ a.title }}</a></h2>
+				<h2 class="title"><a href="#" class="open-modal" data-link="{{ a.link }}">{{ a.title }}</a></h2>
 				{% if a.summary %}
 					<p class="summary">{{ a.summary|striptags|truncate(220, True, '…') }}</p>
 				{% endif %}
@@ -34,5 +34,13 @@
 		</article>
 		{% endfor %}
 	</section>
+
+	<div id="modal" class="modal hidden">
+		<div class="modal-backdrop"></div>
+		<div class="modal-dialog">
+			<button class="modal-close" aria-label="Close">×</button>
+			<iframe id="modal-frame" title="Article" loading="lazy"></iframe>
+		</div>
+	</div>
 {% endblock %}
 

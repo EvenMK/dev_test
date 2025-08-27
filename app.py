@@ -1,7 +1,8 @@
 import os
-from flask import Flask, render_template, request, Response
+from flask import Flask, render_template, request, Response, jsonify
 from flask_caching import Cache
 from feeds import get_articles, SOURCES
+from stocks import get_sp500_prices
 
 
 def create_app() -> Flask:
@@ -41,6 +42,12 @@ def create_app() -> Flask:
 			sources=list(SOURCES.keys()),
 			active_source=source_filter,
 		)
+
+	@app.route("/api/sp500")
+	@cache.cached(timeout=300)
+	def api_sp500():
+		prices = get_sp500_prices()
+		return jsonify({"count": len(prices), "data": prices})
 
 	return app
 
